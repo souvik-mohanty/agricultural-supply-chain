@@ -1,0 +1,102 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "MongoDB (docker)",
+            "detail": "Throwaway MongoDB on localhost:27017 - stops with Ctrl+C",
+            "type": "shell",
+            "command": "docker run --rm --name agrolink-mongo -p 27017:27017 mongo:7",
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "agrolink-mongo",
+                "pattern": { "regexp": "^$" },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Unable to find image|Starting|MongoDB starting",
+                    "endsPattern": "Waiting for connections"
+                }
+            },
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        },
+        {
+            "label": "Backend: run",
+            "detail": "Spring Boot on http://localhost:8080 with passwordless demo login ON (needs MongoDB)",
+            "type": "shell",
+            "command": "mvn spring-boot:run",
+            "options": {
+                "cwd": "${workspaceFolder}/backend",
+                "env": { "DEMO_LOGIN_ENABLED": "true" }
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "agrolink-backend",
+                "pattern": { "regexp": "^(ERROR)\\s+(.*)$", "severity": 1, "message": 2 },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "Scanning for projects|Starting AgroLinkApplication",
+                    "endsPattern": "Started AgroLinkApplication|APPLICATION FAILED"
+                }
+            },
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        },
+        {
+            "label": "Frontend: dev server",
+            "detail": "Vite on http://localhost:5173, proxies /api to the backend",
+            "type": "shell",
+            "command": "npm run dev",
+            "options": { "cwd": "${workspaceFolder}/frontend" },
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "agrolink-frontend",
+                "pattern": { "regexp": "^$" },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "VITE v",
+                    "endsPattern": "Local:"
+                }
+            },
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        },
+        {
+            "label": "Run AgroLink (backend + frontend)",
+            "detail": "Starts both; start MongoDB first if you do not have one running",
+            "dependsOn": ["Backend: run", "Frontend: dev server"],
+            "dependsOrder": "parallel",
+            "problemMatcher": [],
+            "group": { "kind": "build", "isDefault": true }
+        },
+        {
+            "label": "Backend: test",
+            "type": "shell",
+            "command": "mvn test",
+            "options": { "cwd": "${workspaceFolder}/backend" },
+            "problemMatcher": [],
+            "group": { "kind": "test", "isDefault": true },
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        },
+        {
+            "label": "Backend: package jar",
+            "type": "shell",
+            "command": "mvn -DskipTests package",
+            "options": { "cwd": "${workspaceFolder}/backend" },
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        },
+        {
+            "label": "Frontend: install",
+            "type": "shell",
+            "command": "npm install --fetch-timeout=180000 --fetch-retries=6",
+            "options": { "cwd": "${workspaceFolder}/frontend" },
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        },
+        {
+            "label": "Frontend: build",
+            "type": "shell",
+            "command": "npm run build",
+            "options": { "cwd": "${workspaceFolder}/frontend" },
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        }
+    ]
+}
