@@ -69,6 +69,11 @@ anything that lived only there (database URI, mail credentials, ...) must now be
 Frontend on Vercel, backend on Render, database on MongoDB Atlas: see [DEPLOYMENT.md](DEPLOYMENT.md) for the step-by-step
 plan and every environment variable. [`render.yaml`](render.yaml) and [`frontend/vercel.json`](frontend/vercel.json) hold the platform settings.
 
+### Docs
+
+- [DEPLOYMENT.md](DEPLOYMENT.md): Vercel + Render + Atlas plan and env vars
+- [docs/FRONTEND_INTEGRATION.md](docs/FRONTEND_INTEGRATION.md): page inventory, frontend-to-backend mapping, missing APIs
+
 ### Tests
 
 ```bash

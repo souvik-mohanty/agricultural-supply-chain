@@ -9,6 +9,7 @@ export default defineConfig({
     // Forward API calls to the Spring Boot backend so the browser sees a single origin.
     proxy: {
       '/api': 'http://localhost:8080',
+      '/actuator': 'http://localhost:8080', // health check used by the "waking up the server" page
     },
   },
 })

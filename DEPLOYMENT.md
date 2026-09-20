@@ -157,7 +157,8 @@ unless you add them to `CORS_ALLOWED_ORIGINS` as well. Custom domains work the s
 ## 6. Free plan limits to know about
 
 - **Render free instances spin down after 15 minutes without traffic.** The next visit waits for a cold start
-  (roughly a minute). A free uptime pinger (UptimeRobot, cron-job.org) hitting `/actuator/health` every 5-10 minutes
+  (roughly a minute). The frontend shows a "Waking up the server" page during that wait (`BackendGate`: it polls
+  `/actuator/health` and continues by itself), so visitors see progress instead of errors. A free uptime pinger (UptimeRobot, cron-job.org) hitting `/actuator/health` every 5-10 minutes
   keeps it awake. Free services get 750 instance hours per month, which covers one always-on service.
 - **Memory.** A free instance is small (Render's published figure is 512 MB; check their pricing page). The Docker image
   caps the JVM at 70% of available memory. If the service is killed for running out of memory, move to a paid instance

@@ -4,14 +4,17 @@ import App from './App.jsx';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import ThemeProvider from './theme/ThemeContext';
+import BackendGate from './components/BackendGate/BackendGate';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <BackendGate>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </BackendGate>
     </ThemeProvider>
   </React.StrictMode>
 );
