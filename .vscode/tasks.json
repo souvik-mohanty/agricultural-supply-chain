@@ -91,6 +91,14 @@
             "presentation": { "panel": "dedicated", "group": "agrolink" }
         },
         {
+            "label": "Frontend: test",
+            "type": "shell",
+            "command": "npm test",
+            "options": { "cwd": "${workspaceFolder}/frontend" },
+            "problemMatcher": [],
+            "presentation": { "panel": "dedicated", "group": "agrolink" }
+        },
+        {
             "label": "Frontend: build",
             "type": "shell",
             "command": "npm run build",

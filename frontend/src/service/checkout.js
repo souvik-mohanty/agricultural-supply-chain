@@ -1,4 +1,5 @@
 import { checkoutCart, createOrder, verifyPayment } from './orderApi';
+import { createRfqOrder } from './rfqApi';
 
 const CHECKOUT_SCRIPT_URL = 'https://checkout.razorpay.com/v1/checkout.js';
 
@@ -16,6 +17,7 @@ const loadCheckoutScript = () =>
   });
 
 // Opens Razorpay Checkout for an order the backend just created and resolves with the paid order.
+// The browser's payment callback is never trusted: the backend verifies the signature before marking the order PAID.
 // If the buyer closes the window the order stays pending; the backend releases its stock after a timeout.
 const openCheckout = (payment) =>
   new Promise((resolve, reject) => {
@@ -25,6 +27,7 @@ const openCheckout = (payment) =>
       currency: payment.currency,
       order_id: payment.razorpayOrderId,
       name: 'AgroLink',
+      image: `${window.location.origin}/icon-192.png`,
       handler: async (response) => {
         try {
           const verified = await verifyPayment(payment.orderId, {
@@ -52,5 +55,12 @@ export const buyNow = async (productId, quantity = 1) => {
 export const buyCart = async () => {
   await loadCheckoutScript();
   const { data } = await checkoutCart();
+  return openCheckout(data);
+};
+
+// Pays for an accepted RFQ at the quoted price.
+export const payForRfq = async (rfqId) => {
+  await loadCheckoutScript();
+  const { data } = await createRfqOrder(rfqId);
   return openCheckout(data);
 };

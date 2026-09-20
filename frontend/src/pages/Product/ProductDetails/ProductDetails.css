@@ -1,90 +1,50 @@
-.product-details {
-  display: flex;
-  padding: 2rem;
-  gap: 2rem;
-  flex-wrap: wrap;
-  background-color: var(--bg-color, #fff);
-  color: var(--text-color, #000);
+.pd-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
 }
 
-/* LEFT SIDE IMAGE */
-.details-left {
-  flex: 1 1 40%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.main-image {
-  width: 300px;
-  height: 300px;
+.pd-media img,
+.pd-media .mk-noimg {
+  width: 100%;
+  max-height: 420px;
+  height: auto;
+  min-height: 220px;
   object-fit: cover;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f0f0f0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
 }
 
-/* IMAGE GALLERY */
-.image-gallery {
-  display: flex;
-  gap: 10px;
-  margin-top: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
+.pd-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.6rem;
 }
 
-.image-gallery img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.pd-price {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
-/* RIGHT SIDE DETAILS */
-.details-right {
-  flex: 1 1 50%;
+.pd-price small {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--muted);
 }
 
-.details-right h1 {
-  margin-bottom: 1rem;
-  font-size: 2rem;
+.pd-order {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 0.8rem;
 }
 
-.details-right p {
-  margin: 0.5rem 0;
+.pd-qty {
+  max-width: 140px;
 }
 
-/* BUTTONS */
-.action-buttons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.buy-btn,
-.cart-btn {
-  padding: 10px 20px;
-  font-weight: bold;
-  border-radius: 4px;
-  cursor: pointer;
-  border: none;
-}
-
-.buy-btn {
-  background-color: #2e7d32;
-  color: white;
-}
-
-.cart-btn {
-  background-color: transparent;
-  border: 2px solid #2e7d32;
-  color: #2e7d32;
-}
-
-.product-details:hover {
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-}
-.action-buttons button:hover {
-  transform: scale(1.05);
+@media (max-width: 800px) {
+  .pd-layout {
+    grid-template-columns: 1fr;
+  }
 }

@@ -15,9 +15,11 @@
 
 .backend-gate-logo {
   margin: 0 0 32px;
-  color: rgb(135, 244, 26);
-  font-size: 44px;
-  letter-spacing: 2px;
+  font-size: 1rem;
+}
+
+.backend-gate-logo .brand {
+  --brand-h: 5.5rem;
 }
 
 .backend-gate h2 {

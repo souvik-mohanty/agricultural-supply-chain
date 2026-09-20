@@ -1,13 +1,6 @@
 import React from 'react';
-import RouterComponent from './routes/RouterComponent'; // Assuming this is the file where you handle routes
+import RouterComponent from './routes/RouterComponent';
 
-
-const App = () => {
-  const isAuthenticated = !!localStorage.getItem('token'); // Example check
-  return (
-  
-    <RouterComponent />
-  );
-};
+const App = () => <RouterComponent />;
 
 export default App;

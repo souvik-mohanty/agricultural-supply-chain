@@ -1,5 +1,7 @@
 # Frontend / backend integration: inspection, mapping and gaps
 
+> **Status:** sections 1 to 6 are the original inspection (kept for the record). Section 7 says what was built afterwards.
+
 Result of inspecting the existing frontend (`frontend/`) and the Spring Boot monolith (`backend/`) before changing
 anything. Everything here was read from the code, not assumed. Nothing in this document requires a new backend.
 
@@ -133,3 +135,40 @@ which contradicts "preserve". Add **TanStack Query** and **React Hook Form + Zod
    (Recommended: yes, it is small and needed for any farmer dashboard.)
 3. **Stack.** Confirm: keep JavaScript and plain CSS, add TanStack Query and React Hook Form + Zod, no TypeScript/Tailwind/shadcn migration.
 4. **Landing page.** OK to remove the soil analysis / weather / AI recommendation claims, since no such feature exists?
+
+---
+
+## 7. Status after implementation
+
+Decisions taken: RFQ module and a seller-side orders endpoint added to the backend (with a small notification inbox
+because RFQ events need one); logistics and analytics deferred; frontend kept on JavaScript + plain CSS, adding only
+TanStack Query and React Hook Form + Zod.
+
+**Built (backend):** `rfq` module, `GET /orders/seller`, notification inbox (list, unread count, mark read), a
+`sellerId` on every order line, orders priced from an accepted quote, in-app notifications on RFQ events and payments.
+
+**Built (frontend):**
+- Session and security: `AuthProvider` (role loaded from `/users/me`), global 401 handling (session expired -> login),
+  role-aware protected routes, Unauthorized and 404 pages, one navigation config driving a role-based navbar with
+  unread badge and phone menu.
+- Shared states: loading skeletons, empty and error states with retry on every data page; friendly messages for
+  400/401/403/404/409/413/503, timeouts and network failures; confirm dialogs; accessible forms.
+- Pages: per-role dashboards (buyer, farmer, admin, warehouse/manager, advisor, carrier), marketplace (search, category,
+  price, stock, sort, pagination, URL-shareable), product details, cart, checkout, product management (add, edit, delete,
+  photos), quote requests (list, create, detail with quote, accept, reject, cancel, order and pay), orders (list, details,
+  cancel, seller view), payments history, notifications, admin (users, roles, suspend, complaints, reports), complaints,
+  warehouse, advisory articles and farmer questions, categories, about, contact, honest landing page.
+
+**Still not built, because the backend has nothing behind it:** logistics and shipment tracking, analytics
+endpoints and charts, product activate/deactivate, order timeline beyond paid/cancelled, seller names on products,
+server-side pagination, category management, platform settings, forgot-password.
+
+**Limits worth knowing:** the payments page is built from paid orders (there is no payments API); categories are the
+distinct values in use; marketplace filtering and paging run in the browser (the API returns the whole catalogue); the
+warehouse can only be browsed by location (no "list everything" endpoint).
+
+**How it was checked:** backend unit and HTTP-level tests (103), frontend unit tests (23), a scripted RFQ/inbox/seller-orders
+run against a real MongoDB, and a 108-check run of the real frontend in Chrome against the real backend (buyer, farmer, admin,
+anonymous; session expiry; role guards; phone layout; dark theme; keyboard basics). That run found and fixed three real
+bugs: search input dropping characters, file uploads answered with 415, and unreadable links in dark mode.
+Not exercised: a real Razorpay payment (no keys), real email, a real Render cold start.

@@ -21,3 +21,12 @@ export const cancelOrder = (orderId) => {
 export const getMyOrders = () => {
   return apiClient.get('/orders');
 };
+
+export const getOrder = (orderId) => {
+  return apiClient.get(`/orders/${orderId}`);
+};
+
+// Orders that contain the caller's products (FARMER / ADMIN), showing only the caller's lines.
+export const getSellerOrders = () => {
+  return apiClient.get('/orders/seller');
+};

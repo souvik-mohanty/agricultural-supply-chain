@@ -25,6 +25,9 @@ public class PaymentGateway {
 
     public static final String CURRENCY = "INR";
 
+    /** What users see; the missing settings are logged at startup for whoever runs the server. */
+    public static final String UNAVAILABLE_MESSAGE = "Online payments are not available right now. Please try again later.";
+
     private final String keyId;
     private final String keySecret;
     private final RazorpayClient client;
@@ -39,7 +42,12 @@ public class PaymentGateway {
         } catch (RazorpayException e) {
             throw new IllegalStateException("Invalid Razorpay configuration", e);
         }
+        if (this.client == null) {
+            log.warn("Razorpay is not configured (set RAZORPAY_KEY and RAZORPAY_SECRET): payment endpoints will answer 503");
+        }
     }
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PaymentGateway.class);
 
     public boolean isConfigured() {
         return client != null;
@@ -86,7 +94,7 @@ public class PaymentGateway {
 
     private void requireConfigured() {
         if (!isConfigured()) {
-            throw new ServiceUnavailableException("Online payments are not configured (set RAZORPAY_KEY and RAZORPAY_SECRET)");
+            throw new ServiceUnavailableException(UNAVAILABLE_MESSAGE);
         }
     }
 }

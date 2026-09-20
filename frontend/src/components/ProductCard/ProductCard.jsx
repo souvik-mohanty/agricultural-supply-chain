@@ -1,38 +1,53 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import './ProductCard.css';
+import { Link } from 'react-router-dom';
+import { productImageUrl } from '../../service/productApi';
+import { formatCurrency } from '../../lib/format';
 
-const ProductCard = ({ product, onAddToCart, onBuyNow }) => {
-  const navigate = useNavigate();
-
-  const handleCardClick = () => {
-    navigate(`/products/${product.id}`);
-  };
+// One product in the marketplace grid. Only fields the backend provides are shown.
+// `canOrder` = the viewer is a buyer; anonymous viewers are asked to log in instead.
+const ProductCard = ({ product, canOrder, loggedIn, onAddToCart, adding }) => {
+  const image = productImageUrl(product);
+  const inStock = product.quantityAvailable > 0;
 
   return (
-    <div className="product-card" onClick={handleCardClick}>
-      <img
-        className="product-image"
-        src={product.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}
-        alt={product.name}
-        onError={(e) => { e.target.src = 'https://placehold.co/300x200/555/white?text=No+Image'; }}
-      />
-      <div className="product-details">
-        <div className="product-info">
-          <h3 className="product-title">{product.name}</h3>
+    <article className="mk-card">
+      {image ? (
+        <img src={image} alt={product.name} loading="lazy" />
+      ) : (
+        <div className="mk-noimg" aria-hidden="true">
+          No photo
         </div>
-        <div>
-          <p className="product-price">
-            ₹{product.pricePerUnit} <span className="unit-label">/ Unit</span>
-          </p>
+      )}
+      <div className="mk-body">
+        <h3>
+          <Link to={`/products/${product.id}`}>{product.name}</Link>
+        </h3>
+        <span className="mk-meta">{product.category}</span>
+        <span className="mk-price">
+          {formatCurrency(product.pricePerUnit)} <small className="mk-meta">per unit</small>
+        </span>
+        <span className="mk-meta">
+          {inStock ? `${product.quantityAvailable} available` : <strong>Out of stock</strong>}
+          {product.qualityTag ? ` · ${product.qualityTag}` : ''}
+        </span>
 
-          <div className="product-actions" onClick={e => e.stopPropagation()}>
-            <button className="btn add-cart" onClick={() => onAddToCart(product)}>Add to Cart</button>
-            <button className="btn buy-now" onClick={() => onBuyNow(product)}>Buy Now</button>
-          </div>
+        <div className="mk-actions">
+          <Link className="ui-btn ghost small" to={`/products/${product.id}`}>
+            View details
+          </Link>
+          {canOrder && (
+            <button type="button" className="ui-btn primary small" onClick={() => onAddToCart(product)} disabled={!inStock || adding}>
+              {adding ? 'Adding…' : 'Add to cart'}
+            </button>
+          )}
+          {!loggedIn && (
+            <Link className="ui-btn primary small" to="/login">
+              Log in to order
+            </Link>
+          )}
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

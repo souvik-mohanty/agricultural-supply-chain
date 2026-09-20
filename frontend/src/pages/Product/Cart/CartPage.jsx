@@ -1,152 +1,145 @@
-import React, { useEffect, useState } from 'react';
-import { getProductById } from '../../../service/productApi';
-import { getCart, addToCart, removeFromCart } from '../../../service/cartApi';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import PageLayout from '../../../components/ui/PageLayout';
+import Notice from '../../../components/ui/Notice';
+import { EmptyState, QueryBoundary } from '../../../components/ui/PageState';
+import { useCart } from '../../../hooks/useApiData';
+import { addToCart, removeFromCart } from '../../../service/cartApi';
+import { getProductById, productImageUrl } from '../../../service/productApi';
 import { buyCart } from '../../../service/checkout';
-import Navbar from '../../../components/Navbar/Navbar';
-import QuantityCounter from '../../../components/quantityCounter/quantityCounter';
+import { getErrorMessage } from '../../../lib/errors';
+import { formatCurrency } from '../../../lib/format';
+import { keys } from '../../../lib/queryKeys';
 import './CartPage.css';
 
+// Cart lines only hold ids and prices; names and photos come from the catalogue.
+const useLineProducts = (items) =>
+  useQueries({
+    queries: items.map((item) => ({
+      queryKey: keys.product(item.productId),
+      queryFn: async () => (await getProductById(item.productId)).data,
+    })),
+  });
+
+const CartLines = ({ cart, onChange, onRemove, busy }) => {
+  const products = useLineProducts(cart.items);
+  return (
+    <ul className="cart-lines">
+      {cart.items.map((item, index) => {
+        const product = products[index]?.data;
+        const missing = products[index]?.isError;
+        const image = product ? productImageUrl(product) : null;
+        return (
+          <li key={item.productId} className="cart-line ui-card">
+            {image ? <img src={image} alt="" /> : <div className="mk-noimg cart-thumb" aria-hidden="true" />}
+            <div className="cart-line-info">
+              <h3>{product ? <Link to={`/products/${product.id}`}>{product.name}</Link> : missing ? 'Product no longer available' : 'Loading…'}</h3>
+              <p className="mk-meta">
+                {formatCurrency(item.priceAtAddTime)} each · Subtotal {formatCurrency(item.priceAtAddTime * item.quantity)}
+              </p>
+              {missing && <p className="ui-error">This product was removed by its seller. Remove it to continue.</p>}
+            </div>
+            <div className="cart-line-controls">
+              <div className="cart-qty" role="group" aria-label={`Quantity of ${product?.name ?? 'item'}`}>
+                <button type="button" className="ui-btn ghost small" onClick={() => onChange(item, -1)} disabled={busy} aria-label="Decrease quantity">
+                  −
+                </button>
+                <span aria-live="polite">{item.quantity}</span>
+                <button
+                  type="button"
+                  className="ui-btn ghost small"
+                  onClick={() => onChange(item, 1)}
+                  disabled={busy || missing || (product && item.quantity >= product.quantityAvailable)}
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+              </div>
+              <button type="button" className="ui-btn danger small" onClick={() => onRemove(item)} disabled={busy}>
+                Remove
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
+
 const CartPage = () => {
-  const [cartItems, setCartItems] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [notice, setNotice] = useState(null); // { type: 'success' | 'error', text }
-  const [checkingOut, setCheckingOut] = useState(false);
+  const queryClient = useQueryClient();
+  const cartQuery = useCart();
+  const [notice, setNotice] = useState(null); // { type, text }
+  const [paying, setPaying] = useState(false);
 
-  // 🔄 Load cart items on mount
-  useEffect(() => {
-    fetchCart();
-  }, []);
+  const refreshCart = () => queryClient.invalidateQueries({ queryKey: keys.cart });
+  const failed = (error) => setNotice({ type: 'error', text: getErrorMessage(error) });
 
-  const fetchCart = async () => {
-    try {
-      const response = await getCart();
-      const cart = response.data;
+  const change = useMutation({
+    mutationFn: ({ item, delta }) => (delta > 0 ? addToCart(item.productId, 1) : removeFromCart(item.productId, 1)),
+    onSuccess: refreshCart,
+    onError: failed,
+  });
+  const remove = useMutation({ mutationFn: (item) => removeFromCart(item.productId), onSuccess: refreshCart, onError: failed });
+  const busy = change.isPending || remove.isPending;
 
-      const itemsWithDetails = await Promise.all(
-        cart.items.map(async (item) => {
-          const productRes = await getProductById(item.productId);
-          return {
-            ...item,
-            ...productRes.data,
-          };
-        })
-      );
-
-      setCartItems(itemsWithDetails);
-      setTotal(cart.total);
-    } catch (error) {
-      console.error('Error loading cart:', error);
-    }
-  };
-
-  // ➕ Increase quantity
-  const handleIncrease = async (productId) => {
-    try {
-      await addToCart(productId, 1);
-      fetchCart(); // refresh after update
-    } catch (err) {
-      console.error('Error increasing quantity:', err);
-    }
-  };
-
-  // ➖ Decrease quantity
-  const handleDecrease = async (productId, currentQuantity) => {
-    try {
-      if (currentQuantity > 1) {
-        await removeFromCart(productId, 1);
-      } else {
-        await removeFromCart(productId); // remove completely
-      }
-      fetchCart(); // refresh after update
-    } catch (err) {
-      console.error('Error decreasing quantity:', err);
-    }
-  };
-
-  // ❌ Remove entire item
-  const handleRemove = async (productId) => {
-    try {
-      await removeFromCart(productId); // remove all quantities
-      fetchCart();
-    } catch (err) {
-      console.error('Error removing item:', err);
-    }
-  };
-
-  // 💳 Pay for everything in the cart through Razorpay
   const handleCheckout = async () => {
     setNotice(null);
-    setCheckingOut(true);
+    setPaying(true);
     try {
       await buyCart();
-      setNotice({ type: 'success', text: 'Payment successful! Your order has been placed.' });
-      fetchCart();
-    } catch (err) {
-      console.error('Checkout failed:', err);
-      setNotice({ type: 'error', text: err.response?.data?.message || err.message || 'Checkout failed' });
+      setNotice({ type: 'success', text: 'Payment successful. Your order has been placed.' });
+      refreshCart();
+      queryClient.invalidateQueries({ queryKey: keys.orders });
+    } catch (error) {
+      setNotice(
+        error.message === 'Payment cancelled'
+          ? { type: 'info', text: 'Payment cancelled. Nothing was charged; the reserved stock is released shortly.' }
+          : { type: 'error', text: getErrorMessage(error, 'Checkout failed.') },
+      );
     } finally {
-      setCheckingOut(false);
+      setPaying(false);
     }
   };
 
   return (
-    <>
-      <Navbar variant="products" />
-      <div className="cart-page">
-        <div className="cart-left">
-          <h2>Shopping Cart</h2>
-          {cartItems.length === 0 ? (
-            <p>Your cart is empty.</p>
-          ) : (
-            cartItems.map((item, index) => (
-              <div key={index} className="cart-item">
-                <img
-                  src={item.imageUrl || 'https://via.placeholder.com/120'}
-                  alt={item.name}
-                  className="cart-item-image"
-                />
-                <div className="cart-item-details">
-                  <h3>{item.name}</h3>
-                  <p>Price: ₹{item.priceAtAddTime}</p>
-                  <p><strong>Subtotal:</strong> ₹{(item.priceAtAddTime * item.quantity).toFixed(2)}</p>
-
-                  <div className='cart-buttons'>
-                    <QuantityCounter
-                      quantity={item.quantity}
-                      onIncrease={() => handleIncrease(item.productId)}
-                      onDecrease={() => handleDecrease(item.productId, item.quantity)}
-                    />
-                    <button className="remove-btn" onClick={() => handleRemove(item.productId)}>Remove</button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="cart-right">
-          <div className="cart-summary">
-            {cartItems.map((item, index) => (
-              <p key={index}>
-                {item.name}: ₹{item.priceAtAddTime} × {item.quantity} = ₹
-                {(item.priceAtAddTime * item.quantity).toFixed(2)}
+    <PageLayout title="Shopping cart">
+      <Notice type={notice?.type}>{notice?.text}</Notice>
+      <QueryBoundary
+        query={cartQuery}
+        isEmpty={(cart) => cart.items.length === 0}
+        empty={
+          <EmptyState
+            title="Your cart is empty"
+            message="Add products from the marketplace to check out."
+            action={<Link className="ui-btn primary" to="/products">Browse products</Link>}
+          />
+        }
+      >
+        {(cart) => (
+          <div className="cart-layout">
+            <CartLines
+              cart={cart}
+              busy={busy || paying}
+              onChange={(item, delta) => change.mutate({ item, delta })}
+              onRemove={(item) => remove.mutate(item)}
+            />
+            <aside className="ui-card cart-summary" aria-label="Order summary">
+              <h2>Summary</h2>
+              <p>
+                {cart.items.length} item{cart.items.length === 1 ? '' : 's'}
               </p>
-            ))}
-            <h3>Subtotal ({cartItems.length} items): ₹ {total.toFixed(2)}</h3>
-            {notice && (
-              <p style={{ color: notice.type === 'success' ? 'green' : 'red' }}>{notice.text}</p>
-            )}
-            <button
-              className="checkout-btn"
-              onClick={handleCheckout}
-              disabled={checkingOut || cartItems.length === 0}
-            >
-              {checkingOut ? 'Processing...' : 'Proceed to Buy'}
-            </button>
+              <p className="cart-total">{formatCurrency(cart.total)}</p>
+              <button type="button" className="ui-btn primary" onClick={handleCheckout} disabled={paying || busy}>
+                {paying ? 'Processing…' : 'Proceed to pay'}
+              </button>
+              <p className="ui-hint">Stock is reserved for 30 minutes while you pay. Prices are confirmed by the server at checkout.</p>
+            </aside>
           </div>
-        </div>
-      </div>
-    </>
+        )}
+      </QueryBoundary>
+    </PageLayout>
   );
 };
 

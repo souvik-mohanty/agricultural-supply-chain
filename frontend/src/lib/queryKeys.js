@@ -1,0 +1,20 @@
+// One place for cache keys so a mutation can invalidate exactly what it changed.
+export const keys = {
+  products: (category) => ['products', category ?? 'all'],
+  product: (id) => ['product', id],
+  cart: ['cart'],
+  orders: ['orders'],
+  order: (id) => ['order', id],
+  sellerOrders: ['orders', 'seller'],
+  rfqs: ['rfqs'],
+  rfq: (id) => ['rfq', id],
+  inbox: ['notifications', 'inbox'],
+  unread: ['notifications', 'unread'],
+  users: ['admin', 'users'],
+  complaints: ['admin', 'complaints'],
+  warehouseReady: ['warehouse', 'ready'],
+  warehouseLocation: (location) => ['warehouse', 'location', location],
+  articles: ['advisory', 'articles'],
+  myQueries: ['queries', 'mine'],
+  allQueries: ['queries', 'all'],
+};

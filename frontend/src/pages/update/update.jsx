@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import Logo from '../../components/Logo/Logo';
 import './update.css';
 import { getUserDetails, updateUser } from '../../service/userApi';
+import { useAuth } from '../../auth/useAuth';
 
 const Update = () => {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const [userId, setUserId] = useState(null); // Will hold current user ID
 
@@ -68,6 +71,7 @@ const Update = () => {
 
     try {
       await updateUser(userId, formData);
+      await refreshUser();
       setMsg('User updated successfully!');
       setMsgType('success');
       setTimeout(() => navigate('/profile'), 1500);
@@ -79,7 +83,7 @@ const Update = () => {
 
   return (
     <div className="register">
-      <div className="logo"><h1>AgroLink</h1></div>
+      <Link to="/" className="auth-logo" aria-label="AgroLink home"><Logo layout="stacked" tone="dark" /></Link>
       <div className="register-form">
         <h1>Update Profile</h1>
 

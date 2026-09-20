@@ -1,0 +1,61 @@
+/* Sizes follow the proportions of the supplied logo: icon 1.089 : 1, name 9.62 : 1, name height about a third of the icon. */
+.brand {
+  --brand-h: 2.4rem;
+  --brand-icon-color: #2e7d32;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  line-height: 1;
+  color: inherit;
+}
+
+[data-theme='dark'] .brand,
+.brand.brand-on-dark {
+  --brand-icon-color: #66bb6a;
+}
+
+.brand-icon {
+  flex: none;
+  height: var(--brand-h);
+  aspect-ratio: 1.0886;
+  background: var(--brand-icon-color);
+  -webkit-mask: url('../../assets/brand/icon-mask.png') center / contain no-repeat;
+  mask: url('../../assets/brand/icon-mask.png') center / contain no-repeat;
+}
+
+.brand-word {
+  flex: none;
+  height: calc(var(--brand-h) * 0.34);
+  aspect-ratio: 9.6226;
+  background: currentColor;
+  -webkit-mask: url('../../assets/brand/wordmark-mask.png') center / contain no-repeat;
+  mask: url('../../assets/brand/wordmark-mask.png') center / contain no-repeat;
+}
+
+.brand-stacked {
+  flex-direction: column;
+  gap: calc(var(--brand-h) * 0.16);
+}
+
+.brand-on-dark {
+  color: #ffffff;
+}
+
+/* Logo on the always-dark sign-in / register / update pages: a link that centres the stacked logo. */
+.auth-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.auth-logo .brand {
+  --brand-h: 5rem;
+}
+
+@media (max-width: 520px) {
+  .auth-logo .brand {
+    --brand-h: 4rem;
+  }
+}

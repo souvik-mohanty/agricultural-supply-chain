@@ -3,11 +3,13 @@ package com.agrolink.order;
 import com.agrolink.order.dto.CreateOrderRequest;
 import com.agrolink.order.dto.OrderResponse;
 import com.agrolink.order.dto.PaymentResponse;
+import com.agrolink.order.dto.SellerOrderResponse;
 import com.agrolink.order.dto.VerifyPaymentRequest;
 import com.agrolink.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,6 +47,13 @@ public class OrderController {
     @PostMapping("/{id}/cancel")
     public OrderResponse cancel(@PathVariable String id, @AuthenticationPrincipal UserPrincipal principal) {
         return orderService.cancel(id, principal);
+    }
+
+    /** Orders containing the caller's products (sellers only), with only the caller's lines. */
+    @GetMapping("/seller")
+    @PreAuthorize("hasAnyRole('FARMER', 'ADMIN')")
+    public List<SellerOrderResponse> sellerOrders(@AuthenticationPrincipal UserPrincipal principal) {
+        return orderService.getSellerOrders(principal.getId());
     }
 
     @GetMapping

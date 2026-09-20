@@ -10,6 +10,7 @@ import com.agrolink.notification.NotificationService;
 import com.agrolink.order.dto.OrderItemRequest;
 import com.agrolink.order.dto.OrderResponse;
 import com.agrolink.order.dto.PaymentResponse;
+import com.agrolink.order.dto.SellerOrderResponse;
 import com.agrolink.order.dto.VerifyPaymentRequest;
 import com.agrolink.product.ProductService;
 import com.agrolink.product.dto.ProductResponse;
@@ -28,6 +29,7 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +58,7 @@ public class OrderService {
         if (requested == null || requested.isEmpty()) {
             throw new BadRequestException("An order needs at least one item");
         }
-        if (!paymentGateway.isConfigured()) {
-            throw new ServiceUnavailableException("Online payments are not configured (set RAZORPAY_KEY and RAZORPAY_SECRET)");
-        }
+        requirePayments();
 
         Map<String, Integer> quantities = new LinkedHashMap<>();
         for (OrderItemRequest item : requested) {
@@ -68,12 +68,26 @@ public class OrderService {
             quantities.merge(item.productId(), item.quantity(), Integer::sum);
         }
 
+        List<OrderLine> lines = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : quantities.entrySet()) {
+            ProductResponse product = productService.getProduct(entry.getKey());
+            lines.add(new OrderLine(product.id(), product.name(), product.farmerId(), entry.getValue(), product.pricePerUnit()));
+        }
+        return placeOrder(buyerId, lines);
+    }
+
+    /**
+     * Reserves stock, creates the Razorpay order and saves a PENDING order for lines whose prices are already decided:
+     * catalogue prices for normal orders, the accepted quote for orders that come from an RFQ.
+     */
+    public PaymentResponse placeOrder(String buyerId, List<OrderLine> lines) {
+        requirePayments();
+
         List<OrderItem> reserved = new ArrayList<>();
         try {
-            for (Map.Entry<String, Integer> entry : quantities.entrySet()) {
-                ProductResponse product = productService.getProduct(entry.getKey());
-                productService.reserveStock(product.id(), entry.getValue());
-                reserved.add(new OrderItem(product.id(), product.name(), entry.getValue(), product.pricePerUnit()));
+            for (OrderLine line : lines) {
+                productService.reserveStock(line.productId(), line.quantity());
+                reserved.add(new OrderItem(line.productId(), line.productName(), line.quantity(), line.unitPrice(), line.sellerId()));
             }
 
             BigDecimal total = reserved.stream()
@@ -98,6 +112,12 @@ public class OrderService {
         } catch (RuntimeException e) {
             reserved.forEach(this::releaseQuietly);
             throw e;
+        }
+    }
+
+    private void requirePayments() {
+        if (!paymentGateway.isConfigured()) {
+            throw new ServiceUnavailableException(PaymentGateway.UNAVAILABLE_MESSAGE);
         }
     }
 
@@ -130,6 +150,7 @@ public class OrderService {
 
         cartService.removeProducts(order.getBuyerId(), order.getItems().stream().map(OrderItem::getProductId).toList());
         notifyBuyer(order);
+        notifyParties(order);
         return OrderResponse.from(order);
     }
 
@@ -142,6 +163,15 @@ public class OrderService {
             order = cancelAndRelease(order);
         }
         return OrderResponse.from(order);
+    }
+
+    /** Orders that contain the seller's products, showing only that seller's lines. */
+    public List<SellerOrderResponse> getSellerOrders(String sellerId) {
+        Map<String, String> buyerNames = new HashMap<>();
+        return orderRepository.findByItemsSellerIdOrderByCreatedAtDesc(sellerId).stream()
+                .map(order -> SellerOrderResponse.from(order, sellerId,
+                        buyerNames.computeIfAbsent(order.getBuyerId(), this::buyerName)))
+                .toList();
     }
 
     public List<OrderResponse> getMyOrders(String buyerId) {
@@ -188,6 +218,22 @@ public class OrderService {
             throw new AccessDeniedException("You can only access your own orders");
         }
         return order;
+    }
+
+    private String buyerName(String buyerId) {
+        try {
+            return userService.getById(buyerId).username();
+        } catch (RuntimeException e) {
+            return "unknown buyer";
+        }
+    }
+
+    private void notifyParties(Order order) {
+        notificationService.notifyUser(order.getBuyerId(), "Payment received",
+                String.format("Your payment of INR %.2f for order %s was received.", order.getAmount(), order.getId()));
+        order.getItems().stream().map(OrderItem::getSellerId).filter(StringUtils::hasText).distinct()
+                .forEach(sellerId -> notificationService.notifyUser(sellerId, "New paid order",
+                        "You have a new paid order (" + order.getId() + ") for your products."));
     }
 
     private void notifyBuyer(Order order) {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../../service/apiClient';
 import { pingHealth, toHealthUrl, waitForBackend } from '../../service/backendWake';
+import Logo from '../Logo/Logo';
 import './BackendGate.css';
 
 const AWAKE_KEY = 'agrolink.backendAwakeAt';
@@ -71,7 +72,9 @@ const BackendGate = ({ children }) => {
 
   return (
     <div className="backend-gate" role="status" aria-live="polite">
-      <h1 className="backend-gate-logo">AgroLink</h1>
+      <h1 className="backend-gate-logo">
+        <Logo layout="stacked" tone="dark" />
+      </h1>
 
       {status === 'checking' ? (
         <>

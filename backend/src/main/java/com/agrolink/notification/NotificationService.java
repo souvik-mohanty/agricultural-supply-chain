@@ -1,6 +1,7 @@
 package com.agrolink.notification;
 
 import com.agrolink.common.exception.BadRequestException;
+import com.agrolink.common.exception.ResourceNotFoundException;
 import com.agrolink.notification.dto.NotificationRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 
 @Slf4j
@@ -48,6 +50,44 @@ public class NotificationService {
         } catch (RuntimeException e) {
             log.warn("Could not send notification to {}: {}", recipient, e.getMessage());
         }
+    }
+
+    /** Puts a message in the user's in-app inbox. Never throws: a lost notification must not break the caller. */
+    public void notifyUser(String userId, String subject, String message) {
+        try {
+            notificationRepository.save(Notification.builder()
+                    .recipient(userId)
+                    .userId(userId)
+                    .type("IN_APP")
+                    .subject(subject)
+                    .message(message)
+                    .timestamp(LocalDateTime.now())
+                    .build());
+        } catch (RuntimeException e) {
+            log.warn("Could not store notification for user {}: {}", userId, e.getMessage());
+        }
+    }
+
+    public List<Notification> inbox(String userId) {
+        return notificationRepository.findTop50ByUserIdOrderByTimestampDesc(userId);
+    }
+
+    public long unreadCount(String userId) {
+        return notificationRepository.countByUserIdAndReadFalse(userId);
+    }
+
+    public Notification markRead(String id, String userId) {
+        Notification notification = notificationRepository.findById(id)
+                .filter(found -> userId.equals(found.getUserId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
+        notification.setRead(true);
+        return notificationRepository.save(notification);
+    }
+
+    public void markAllRead(String userId) {
+        List<Notification> unread = notificationRepository.findByUserIdAndReadFalse(userId);
+        unread.forEach(notification -> notification.setRead(true));
+        notificationRepository.saveAll(unread);
     }
 
     private String sendEmail(NotificationRequest request) {

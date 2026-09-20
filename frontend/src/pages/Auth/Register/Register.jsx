@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import Logo from '../../../components/Logo/Logo';
 import './Register.css';
 import { registerUser } from '../../../service/authApi'; 
 
@@ -42,7 +43,7 @@ const Register = () => {
 
   return (
     <div className="register">
-      <div className="logo"><h1>AgroLink</h1></div>
+      <Link to="/" className="auth-logo" aria-label="AgroLink home"><Logo layout="stacked" tone="dark" /></Link>
       <div className="register-form">
         <h1>Sign Up</h1>
 

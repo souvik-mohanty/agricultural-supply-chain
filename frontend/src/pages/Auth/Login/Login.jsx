@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { loginUser, getDemoRoles, demoLogin } from "../../../service/authApi";
+import { useAuth } from "../../../auth/useAuth";
+import { roleLabel } from "../../../auth/roles";
+import Logo from '../../../components/Logo/Logo';
 import './Login.css';
 
 const Login = () => {
@@ -9,7 +12,9 @@ const Login = () => {
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState(null); // 'success' or 'error'
   const [demoRoles, setDemoRoles] = useState([]);
-  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated, sessionExpired } = useAuth();
+  const destination = location.state?.from?.pathname || '/dashboard';
 
   // The backend offers demo roles only when it runs with DEMO_LOGIN_ENABLED=true.
   useEffect(() => {
@@ -21,18 +26,12 @@ const Login = () => {
   const handleDemoLogin = async (role) => {
     try {
       const response = await demoLogin(role);
-      localStorage.setItem("token", response.data.token);
-      setMsg(`Logged in as ${role}`);
-      setMsgType("success");
-      setTimeout(() => navigate("/home"), 500);
+      await login(response.data.token); // once logged in, the redirect below takes over
     } catch (err) {
       setMsg(err.response?.data?.message || "Demo login failed");
       setMsgType("error");
     }
   };
-
-  const roleLabel = (role) =>
-    role.charAt(0) + role.slice(1).toLowerCase().replace("_", " ");
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -40,11 +39,7 @@ const Login = () => {
       const response = await loginUser({ username, password });
 
       if (response.status === 200 && response.data.token) {
-        const token = response.data.token;
-        localStorage.setItem("token", token);
-        setMsg("Login successful!");
-        setMsgType("success");
-        setTimeout(() => navigate("/home"), 1500);
+        await login(response.data.token); // once logged in, the redirect below takes over
       } else {
         console.log("Login failed.");
         setMsg("Login failed: Token not received");
@@ -60,9 +55,13 @@ const Login = () => {
     }
   };
 
+  if (isAuthenticated) {
+    return <Navigate to={destination} replace />;
+  }
+
   return (
     <div className='login'>
-      <div className="logo"><h1>AgroLink</h1></div>
+      <Link to="/" className="auth-logo" aria-label="AgroLink home"><Logo layout="stacked" tone="dark" /></Link>
       <div className="login-form">
         <h1>Sign In</h1>
         <form onSubmit={handleLogin}>
@@ -85,8 +84,14 @@ const Login = () => {
             <p>Don't have an account? <Link to="/register" className="forgot">Register</Link></p>
           </div>
 
+          {sessionExpired && !msg && (
+            <p role="status" style={{ color: "orange" }}>
+              Your session expired. Please sign in again.
+            </p>
+          )}
+
           {msg && (
-            <p style={{ color: msgType === "success" ? "green" : "red" }}>
+            <p role={msgType === "error" ? "alert" : "status"} style={{ color: msgType === "success" ? "green" : "red" }}>
               {msg}
             </p>
           )}

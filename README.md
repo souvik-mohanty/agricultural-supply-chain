@@ -1,7 +1,11 @@
+<p align="center">
+  <img src="docs/assets/agrolink-logo.png" alt="AgroLink" width="420" />
+</p>
+
 # AgroLink
 
-An agricultural marketplace: farmers list produce, buyers browse, cart and pay, advisors answer farmers' questions,
-warehouse operators track stored crops, and admins moderate the platform.
+An agricultural B2B marketplace: farmers list produce, buyers browse, request quotes (RFQ), order and pay, advisors answer
+farmers' questions, warehouse operators track stored crops, and admins moderate the platform.
 
 The backend is a single Spring Boot application (a modular monolith). The frontend is a React + Vite app.
 
@@ -15,12 +19,20 @@ AgroLink/
 │       ├── user/           registration, login, profiles
 │       ├── product/        catalogue, photos, stock reservation
 │       ├── cart/           per-user cart
-│       ├── order/          orders, Razorpay payments
+│       ├── order/          orders, Razorpay payments, orders for a seller's products
+│       ├── rfq/            request-for-quote workflow (quote, accept, reject, order at the quoted price)
 │       ├── warehouse/      crop storage tracking
 │       ├── advisory/       advisory articles, farmer questions
-│       ├── notification/   email / SMS / push
+│       ├── notification/   in-app inbox, email / SMS / push
 │       └── admin/          user moderation, complaints, PDF/Excel reports
-└── frontend/   React 19 + Vite
+└── frontend/   React 19 + Vite (React Router, TanStack Query, React Hook Form + Zod)
+    └── src/
+        ├── auth/         session (AuthProvider), roles, protected routes
+        ├── navigation/   which links each role sees
+        ├── service/      one small module per backend area + the axios client
+        ├── hooks/, lib/  data hooks, error messages, formatting, marketplace filtering
+        ├── components/   navbar, shared UI (states, forms, tables, dialogs), "waking up the server" page
+        └── pages/        dashboards (one per role), marketplace, RFQs, orders, admin, warehouse, advisory, ...
 ```
 
 Each feature package owns its model, repository, service and controller. Packages talk to each other by calling
@@ -80,9 +92,13 @@ plan and every environment variable. [`render.yaml`](render.yaml) and [`frontend
 cd backend && ./mvnw test
 ```
 
-Unit tests cover the business rules (cart, orders and payment verification, stock reservation, user updates, JWT).
-`SecurityIntegrationTest` boots the whole application with mocked repositories to check authentication, role rules and
-error responses; no database is needed.
+Unit tests cover the business rules (cart, orders and payment verification, stock reservation, RFQ workflow, inbox,
+user updates, JWT). `SecurityIntegrationTest` and `RfqIntegrationTest` boot the whole application with in-memory
+repositories to check authentication, role rules, JSON dates and error responses; no database is needed.
+
+```bash
+cd frontend && npm test     # marketplace filtering, error messages, formatting, navigation rules, server wake-up logic
+```
 
 ## API overview
 
@@ -100,12 +116,18 @@ Errors are always JSON: `{ timestamp, status, error, message, path }`.
 | Cart | `GET /cart`, `POST /cart/add?productId&quantity`, `DELETE /cart/remove?productId[&quantity]` | logged in; the cart is the caller's |
 | Orders | `POST /orders` `{items:[{productId,quantity}]}`, `POST /orders/checkout` (whole cart) | logged in |
 | | `POST /orders/{id}/verify`, `POST /orders/{id}/cancel`, `GET /orders`, `GET /orders/{id}` | order owner or ADMIN |
+| | `GET /orders/seller` (orders containing my products, only my lines, no buyer id) | FARMER, ADMIN |
+| Quote requests | `POST /rfqs` `{productId,quantity,unit,targetPricePerUnit,deliveryLocation,requiredDeliveryDate,requirements,deadline}` | BUYER, CUSTOMER, ADMIN |
+| | `GET /rfqs` (mine as buyer or seller; admins see all), `GET /rfqs/{id}` | the buyer, the seller, or ADMIN |
+| | `POST /rfqs/{id}/quote` `{pricePerUnit,quantity,deliveryDate,notes}` | FARMER who owns the product |
+| | `POST /rfqs/{id}/accept`, `/reject`, `/cancel`, `POST /rfqs/{id}/order` | the buyer |
 | Warehouse | `POST /warehouse/store`, `GET /warehouse/location/{l}`, `PUT /warehouse/mark-ready/{id}`, `GET /warehouse/ready` | WAREHOUSE_OPERATOR, MANAGER, ADMIN |
 | Advisory | `GET /advisory/all` | public |
 | | `POST /advisory/post` | ADVISOR, ADMIN |
 | Queries | `POST /query/submit`, `GET /query/mine` | logged in |
 | | `POST /query/respond/{id}`, `GET /query/all` | ADVISOR, ADMIN |
 | Notifications | `POST /notifications/send` | ADMIN, MANAGER |
+| | `GET /notifications/me`, `GET /notifications/me/unread-count`, `POST /notifications/{id}/read`, `POST /notifications/read-all` | logged in (own inbox) |
 | Complaints | `POST /complaints` | logged in |
 | Admin | `GET /admin/users`, `POST /admin/suspend/{id}`, `POST /admin/unsuspend/{id}`, `PUT /admin/users/{id}/role`, `GET /admin/complaints`, `POST /admin/complaints/{id}/resolve`, `GET /admin/report/pdf`, `GET /admin/report/excel` | ADMIN |
 
@@ -117,6 +139,15 @@ Errors are always JSON: `{ timestamp, status, error, message, path }`.
    is checked with HMAC-SHA256; on success the order becomes `PAID`, those products leave the cart and the buyer is emailed.
 3. Unpaid orders are cancelled and their stock released after 30 minutes (`app.orders.pending-expiry-minutes`), or
    immediately via `POST /orders/{id}/cancel`.
+
+### How a quote request (RFQ) works
+
+1. A buyer opens a product and sends a request: quantity, delivery location, deadline, optional target price.
+   It is addressed to the seller who owns that product, who is notified in the inbox.
+2. The seller answers with a quote (price per unit, quantity, delivery date) and can replace it until the buyer answers.
+3. The buyer accepts or rejects it, or cancels the request. Requests past their deadline become `EXPIRED`.
+4. After accepting, the buyer creates the order: it is priced **from the quote**, not the catalogue, and goes through the
+   same stock reservation and Razorpay payment as any other order. Statuses: `OPEN, QUOTED, ACCEPTED, REJECTED, CANCELLED, EXPIRED`.
 
 ## What changed from the microservice version
 
@@ -142,7 +173,10 @@ Things that behave differently on purpose:
 
 ## Not done yet
 
-- SMS and push notifications are mocked (they log instead of calling a provider).
+- **Logistics / shipment tracking** and **analytics endpoints** do not exist (the `CARRIER` role has nothing to do yet).
+  Dashboards show real counts computed from existing data, not analytics.
+- Order statuses are only `PENDING`, `PAID` and `CANCELLED`; there is no dispatch or delivery tracking.
+- Products have no unit, minimum order, location or active/inactive flag, and a buyer cannot see a seller's name on a product.
+- SMS and push notifications are mocked (they log instead of calling a provider); email needs a paid Render plan.
 - No forgot-password flow (the login page links to it, but neither a route nor an endpoint exists).
-- Order history is available from the API (`GET /orders`) but the frontend has no page for it yet.
 - `Aadhar` numbers are stored and returned in plain text.

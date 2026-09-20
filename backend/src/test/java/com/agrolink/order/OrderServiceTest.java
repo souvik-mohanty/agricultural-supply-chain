@@ -8,6 +8,7 @@ import com.agrolink.notification.NotificationService;
 import com.agrolink.order.dto.OrderItemRequest;
 import com.agrolink.order.dto.OrderResponse;
 import com.agrolink.order.dto.PaymentResponse;
+import com.agrolink.order.dto.SellerOrderResponse;
 import com.agrolink.order.dto.VerifyPaymentRequest;
 import com.agrolink.product.ProductService;
 import com.agrolink.product.dto.ProductResponse;
@@ -72,7 +73,7 @@ class OrderServiceTest {
     private static Order order(OrderStatus status) {
         return Order.builder()
                 .id("order-1").buyerId(BUYER).status(status).amount(50.0).razorpayOrderId("rzp-order-1")
-                .items(List.of(new OrderItem("p1", "Product p1", 2, 25.0)))
+                .items(List.of(new OrderItem("p1", "Product p1", 2, 25.0, "farmer-1")))
                 .build();
     }
 
@@ -214,5 +215,66 @@ class OrderServiceTest {
 
         assertThat(stale.getStatus()).isEqualTo(OrderStatus.CANCELLED);
         verify(productService).releaseStock("p1", 2);
+    }
+
+    @Test
+    void everyOrderLineRemembersItsSeller() {
+        when(productService.getProduct("p1")).thenReturn(product("p1", 10));
+        when(nanoIdGenerator.generateOrderId()).thenReturn("order-1");
+        when(paymentGateway.createOrder(anyLong(), anyString())).thenReturn("rzp-order-1");
+
+        orderService.createOrder(BUYER, List.of(new OrderItemRequest("p1", 1)));
+
+        ArgumentCaptor<Order> saved = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(saved.capture());
+        assertThat(saved.getValue().getItems().get(0).getSellerId()).isEqualTo("farmer-1");
+    }
+
+    @Test
+    void anOrderFromAnAcceptedQuoteIsPricedFromTheQuoteNotTheCatalogue() {
+        when(nanoIdGenerator.generateOrderId()).thenReturn("order-1");
+        when(paymentGateway.createOrder(anyLong(), anyString())).thenReturn("rzp-order-1");
+
+        PaymentResponse response = orderService.placeOrder(BUYER,
+                List.of(new OrderLine("p1", "Product p1", "farmer-1", 500, 17.5)));
+
+        assertThat(response.amount()).isEqualTo(875000L); // 500 x 17.50 = 8750.00 INR
+        verify(productService).reserveStock("p1", 500);
+        verify(productService, never()).getProduct(anyString()); // the catalogue price is never consulted
+        ArgumentCaptor<Order> saved = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(saved.capture());
+        assertThat(saved.getValue().getAmount()).isEqualTo(8750.0);
+    }
+
+    @Test
+    void sellersSeeOnlyTheirOwnLinesAndNeverTheBuyerId() {
+        Order mixed = Order.builder().id("order-9").buyerId(BUYER).status(OrderStatus.PAID).amount(70.0)
+                .items(List.of(
+                        new OrderItem("p1", "Tomato", 2, 10.0, "farmer-1"),
+                        new OrderItem("p2", "Onion", 5, 10.0, "farmer-2")))
+                .build();
+        when(orderRepository.findByItemsSellerIdOrderByCreatedAtDesc("farmer-1")).thenReturn(List.of(mixed));
+        when(userService.getById(BUYER)).thenReturn(
+                new UserProfileDTO(BUYER, "buyer-name", null, null, "BUYER", null, null, false, false));
+
+        List<SellerOrderResponse> orders = orderService.getSellerOrders("farmer-1");
+
+        assertThat(orders).hasSize(1);
+        assertThat(orders.get(0).buyerName()).isEqualTo("buyer-name");
+        assertThat(orders.get(0).items()).extracting(OrderItem::getProductName).containsExactly("Tomato");
+        assertThat(orders.get(0).subtotal()).isEqualTo(20.0);
+    }
+
+    @Test
+    void paymentNotifiesTheBuyerAndEverySellerInTheirInbox() {
+        when(orderRepository.findById("order-1")).thenReturn(Optional.of(order(OrderStatus.PENDING)));
+        when(paymentGateway.verifySignature("rzp-order-1", "pay_1", "sig")).thenReturn(true);
+        when(userService.getById(BUYER)).thenReturn(
+                new UserProfileDTO(BUYER, "buyer", null, null, "BUYER", null, null, false, false));
+
+        orderService.verifyPayment("order-1", BUYER_PRINCIPAL, new VerifyPaymentRequest("pay_1", "sig"));
+
+        verify(notificationService).notifyUser(eq(BUYER), anyString(), anyString());
+        verify(notificationService).notifyUser(eq("farmer-1"), anyString(), anyString());
     }
 }

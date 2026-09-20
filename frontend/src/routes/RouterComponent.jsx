@@ -1,16 +1,17 @@
-// src/router/RouterComponent.jsx
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import appRoutes from './app.routes';
+import { LoadingState } from '../components/ui/PageState';
 
-const RouterComponent = () => {
-  return (
+// Pages are loaded on demand (see app.routes.jsx), so the first visit only downloads what it needs.
+const RouterComponent = () => (
+  <Suspense fallback={<LoadingState label="Loading…" fullPage />}>
     <Routes>
-      {appRoutes.map(({ path, element }, index) => (
-        <Route key={index} path={path} element={element} />
+      {appRoutes.map(({ path, element }) => (
+        <Route key={path} path={path} element={element} />
       ))}
     </Routes>
-  );
-};
+  </Suspense>
+);
 
 export default RouterComponent;

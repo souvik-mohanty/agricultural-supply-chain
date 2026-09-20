@@ -13,4 +13,7 @@ public class OrderItem {
     private String productName;
     private int quantity;
     private double unitPrice;
+
+    /** The farmer who owns the product; lets sellers list the orders that contain their products. */
+    private String sellerId;
 }
