@@ -1,30 +1,18 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-// Axios instance
-const API = axios.create({
-  baseURL: 'http://localhost:8089/user', // Your Spring Boot backend
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Auth API calls
-
-export const loginUser = async (credentials) => {
-  return API.post('/auth/login', credentials); // { username, password }
+export const loginUser = (credentials) => {
+  return apiClient.post('/auth/login', credentials); // { username, password }
 };
 
-export const registerUser = async (userData) => {
-  return API.post('/auth/register', userData); // { username, email, password, ... }
+export const registerUser = (userData) => {
+  return apiClient.post('/auth/register', userData); // { username, password, email, role, ... }
 };
 
-
-export const forgotPassword = async (email) => {
-  return API.post('/forgot-password', { email }); // { email }
+// Passwordless demo login. The backend returns an empty list unless DEMO_LOGIN_ENABLED=true.
+export const getDemoRoles = () => {
+  return apiClient.get('/auth/demo-login');
 };
 
-export const resetPassword = async (token, password) => {
-  return API.post('/reset-password', { token, password }); // { token, password }
+export const demoLogin = (role) => {
+  return apiClient.post(`/auth/demo-login/${role}`);
 };
-
-

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { getCart, getProductById, addToCart, removeFromCart } from '../../../service/productApi';
+import { getProductById } from '../../../service/productApi';
+import { getCart, addToCart, removeFromCart } from '../../../service/cartApi';
+import { buyCart } from '../../../service/checkout';
 import Navbar from '../../../components/Navbar/Navbar';
 import QuantityCounter from '../../../components/quantityCounter/quantityCounter';
 import './CartPage.css';
@@ -7,6 +9,8 @@ import './CartPage.css';
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const [total, setTotal] = useState(0);
+  const [notice, setNotice] = useState(null); // { type: 'success' | 'error', text }
+  const [checkingOut, setCheckingOut] = useState(false);
 
   // 🔄 Load cart items on mount
   useEffect(() => {
@@ -69,6 +73,22 @@ const CartPage = () => {
     }
   };
 
+  // 💳 Pay for everything in the cart through Razorpay
+  const handleCheckout = async () => {
+    setNotice(null);
+    setCheckingOut(true);
+    try {
+      await buyCart();
+      setNotice({ type: 'success', text: 'Payment successful! Your order has been placed.' });
+      fetchCart();
+    } catch (err) {
+      console.error('Checkout failed:', err);
+      setNotice({ type: 'error', text: err.response?.data?.message || err.message || 'Checkout failed' });
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
   return (
     <>
       <Navbar variant="products" />
@@ -113,7 +133,16 @@ const CartPage = () => {
               </p>
             ))}
             <h3>Subtotal ({cartItems.length} items): ₹ {total.toFixed(2)}</h3>
-            <button className="checkout-btn">Proceed to Buy</button>
+            {notice && (
+              <p style={{ color: notice.type === 'success' ? 'green' : 'red' }}>{notice.text}</p>
+            )}
+            <button
+              className="checkout-btn"
+              onClick={handleCheckout}
+              disabled={checkingOut || cartItems.length === 0}
+            >
+              {checkingOut ? 'Processing...' : 'Proceed to Buy'}
+            </button>
           </div>
         </div>
       </div>

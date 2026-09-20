@@ -11,26 +11,20 @@ const Register = () => {
     aadhar: '',
     contactNumber: '',
     address: '',
-    roles: [''],
+    role: '',
     twoFactorEnabled: false
   });
 
   const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState(null); // 'success' or 'error'
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'roles') {
-      setFormData((prev) => ({
-        ...prev,
-        roles: [value]
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -42,7 +36,7 @@ const Register = () => {
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       setMsgType("error");
-      setMsg(err.response?.data || 'Registration failed');
+      setMsg(err.response?.data?.message || 'Registration failed');
     }
   };
 
@@ -73,13 +67,11 @@ const Register = () => {
           </div>
 
           {/* Role Dropdown */}
-          <select name="roles" value={formData.roles[0]} onChange={handleChange} required>
+          <select name="role" value={formData.role} onChange={handleChange} required>
             <option value="" disabled hidden>-- Select Role --</option>
             <option value="FARMER">Farmer</option>
-            <option value="ADMIN">Admin</option>
             <option value="BUYER">Buyer</option>
             <option value="CARRIER">Carrier</option>
-            <option value="MANAGER">Manager</option>
             <option value="WAREHOUSE_OPERATOR">Warehouse Operator</option>
             <option value="ADVISOR">Advisor</option>
           </select>

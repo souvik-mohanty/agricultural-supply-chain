@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 // Your API functions
 import { getProductById, getProductImgById } from '../../../service/productApi';
+import { addToCart } from '../../../service/cartApi';
+import { buyNow } from '../../../service/checkout';
 import Navbar from '../../../components/Navbar/Navbar';
 import './ProductDetails.css';
 
@@ -17,11 +19,14 @@ const ProductDetails = () => {
       .catch(err => console.error(err));
   }, [id]);
 
+  const productId = product?.id;
+
   useEffect(() => {
     let objectUrl = null;
-    // This effect fetches an additional image based on the product
-    if (product) {
-      getProductImgById(product.id)
+    // This effect fetches the product image. It depends on the id only: depending on the whole
+    // product would re-run it every time it sets the image, fetching forever.
+    if (productId) {
+      getProductImgById(productId)
         .then(res => {
           objectUrl = URL.createObjectURL(res.data);
           setProduct(prev => ({ 
@@ -38,14 +43,28 @@ const ProductDetails = () => {
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [product]);
+  }, [productId]);
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     setLoadingBuy(true);
-    setTimeout(() => {
+    try {
+      await buyNow(product.id, 1);
+      alert('Payment successful! Your order has been placed.');
+      getProductById(id).then(res => setProduct(prev => ({ ...res.data, imageUrls: prev?.imageUrls }))); // refresh the remaining stock
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Could not complete the purchase');
+    } finally {
       setLoadingBuy(false);
-      alert('Navigating to Buy Page...');
-    }, 2000);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    try {
+      await addToCart(product.id, 1);
+      alert(`${product.name} has been added to your cart.`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'There was an issue adding the item to your cart.');
+    }
   };
 
   if (!product) return <p className="loading-msg">Loading product details...</p>;
@@ -79,7 +98,7 @@ const ProductDetails = () => {
             <button className="buy-btn" onClick={handleBuyNow} disabled={loadingBuy}>
               {loadingBuy ? 'Loading...' : 'Buy Now'}
             </button>
-            <button className="cart-btn">Add to Cart</button>
+            <button className="cart-btn" onClick={handleAddToCart}>Add to Cart</button>
           </div>
         </div>
       </div>

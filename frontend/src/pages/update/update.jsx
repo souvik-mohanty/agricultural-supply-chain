@@ -15,7 +15,6 @@ const Update = () => {
     aadhar: '',
     contactNumber: '',
     address: '',
-    roles: [''],
     twoFactorEnabled: false
   });
 
@@ -37,10 +36,9 @@ const Update = () => {
           aadhar: user.aadhar || '',
           contactNumber: user.contactNumber || '',
           address: user.address || '',
-          roles: [user.role || ''],
           twoFactorEnabled: user.twoFactorEnabled || false,
         });
-      } catch (error) {
+      } catch {
         setMsg('Failed to fetch user data');
         setMsgType('error');
       }
@@ -52,9 +50,7 @@ const Update = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === 'roles') {
-      setFormData((prev) => ({ ...prev, roles: [value] }));
-    } else if (type === 'checkbox') {
+    if (type === 'checkbox') {
       setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -74,8 +70,8 @@ const Update = () => {
       await updateUser(userId, formData);
       setMsg('User updated successfully!');
       setMsgType('success');
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } catch (error) {
+      setTimeout(() => navigate('/profile'), 1500);
+    } catch {
       setMsg('Update failed');
       setMsgType('error');
     }
@@ -103,17 +99,6 @@ const Update = () => {
             <input type="text" name="contactNumber" placeholder="Contact Number" value={formData.contactNumber} onChange={handleChange} required />
             <input type="text" name="address" placeholder="Address" value={formData.address} onChange={handleChange} required />
           </div>
-
-          <select name="roles" value={formData.roles[0]} onChange={handleChange} required>
-            <option value="" disabled hidden>-- Select Role --</option>
-            <option value="FARMER">Farmer</option>
-            <option value="ADMIN">Admin</option>
-            <option value="BUYER">Buyer</option>
-            <option value="CARRIER">Carrier</option>
-            <option value="MANAGER">Manager</option>
-            <option value="WAREHOUSE_OPERATOR">Warehouse Operator</option>
-            <option value="ADVISOR">Advisor</option>
-          </select>
 
           <div className="form-row toggle-row">
                 <label htmlFor="twoFactorEnabled">Two-Factor Authentication</label>

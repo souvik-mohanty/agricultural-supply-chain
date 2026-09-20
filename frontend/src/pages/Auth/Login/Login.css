@@ -93,6 +93,40 @@ body {
 
 }
 
+.login-form .demo-login {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+}
+
+.login-form .demo-login-title {
+  color: #b3b3b3;
+  font-size: 13px;
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.login-form .demo-login-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.login-form .demo-login-buttons button {
+  flex: 1 1 45%;
+  margin-top: 0;
+  padding: 10px 8px;
+  font-size: 13px;
+  background-color: transparent;
+  color: #5ef630;
+  border: 1px solid #5ef630;
+}
+
+.login-form .demo-login-buttons button:hover {
+  background-color: #5ef630;
+  color: #141414;
+}
+
 .login-options a.forgot:hover {
   text-decoration: underline;
   color: #91f373;

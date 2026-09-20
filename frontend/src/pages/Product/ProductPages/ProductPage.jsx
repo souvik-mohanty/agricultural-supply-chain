@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import ProductCard from '../../../components/ProductCard/ProductCard'; // Import the ProductCard component
-import { fetchAllProducts, addToCart, getProductImgById } from '../../../service/productApi';
+import { fetchAllProducts, getProductImgById } from '../../../service/productApi';
+import { addToCart } from '../../../service/cartApi';
 import './ProductPage.css';
 
 const ProductPage = () => {

@@ -1,13 +1,23 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-// Axios instance
-const API = axios.create({
-    baseURL: 'http://localhost:8083/api', // Your Spring Boot backend
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+// items: [{ productId, quantity }]. Prices and the buyer come from the server.
+export const createOrder = (items) => {
+  return apiClient.post('/orders', { items });
+};
 
-export const createOrder = async (orderData) => {
-    return API.post('/orders', orderData);
+export const checkoutCart = () => {
+  return apiClient.post('/orders/checkout');
+};
+
+// paymentResult: { razorpayPaymentId, razorpaySignature }
+export const verifyPayment = (orderId, paymentResult) => {
+  return apiClient.post(`/orders/${orderId}/verify`, paymentResult);
+};
+
+export const cancelOrder = (orderId) => {
+  return apiClient.post(`/orders/${orderId}/cancel`);
+};
+
+export const getMyOrders = () => {
+  return apiClient.get('/orders');
 };
