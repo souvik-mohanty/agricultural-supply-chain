@@ -1,0 +1,10 @@
+# Activate with: SPRING_PROFILES_ACTIVE=maintenance
+#
+# enabled       - true blocks every request (except /actuator/health) with HTTP 503
+# blocked-paths - URL prefixes that return 503 even when `enabled` is false
+# blocked-origin- requests carrying this Origin header return 503
+app:
+  maintenance:
+    enabled: true
+    blocked-paths: []
+    blocked-origin:
