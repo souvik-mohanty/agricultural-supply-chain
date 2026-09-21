@@ -186,6 +186,12 @@ body, html {
   text-decoration: underline;
 }
 
+.hero-demo-note {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
 .cta-buttons {
   display: flex;
   gap: 1rem;

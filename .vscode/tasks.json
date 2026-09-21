@@ -20,7 +20,7 @@
         },
         {
             "label": "Backend: run",
-            "detail": "Spring Boot on http://localhost:8080 with passwordless demo login ON (needs MongoDB)",
+            "detail": "Spring Boot on http://localhost:8080 with demo accounts ON (needs MongoDB)",
             "type": "shell",
             "command": "mvn spring-boot:run",
             "options": {

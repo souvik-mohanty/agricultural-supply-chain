@@ -37,6 +37,10 @@ services:
       - key: RAZORPAY_SECRET
         sync: false
 
-      # Never enable on a public deployment: it lets anyone log in as any role without a password.
+      # Public showcase: creates dummy accounts (farmer, buyer, ...) whose passwords are listed on the login page, so
+      # visitors can look around without registering. DEMO_INCLUDE_STAFF=false keeps the ADMIN and MANAGER accounts out.
+      # Set DEMO_LOGIN_ENABLED to "false" once the site holds real users' data.
       - key: DEMO_LOGIN_ENABLED
+        value: "true"
+      - key: DEMO_INCLUDE_STAFF
         value: "false"

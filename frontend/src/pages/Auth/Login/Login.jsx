@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
-import { loginUser, getDemoAccounts } from "../../../service/authApi";
+import { loginUser } from "../../../service/authApi";
+import { useDemoAccounts } from "../../../hooks/useApiData";
 import { useAuth } from "../../../auth/useAuth";
 import { ROLE_CHOICES, roleLabel } from "../../../auth/roles";
 import Logo from '../../../components/Logo/Logo';
@@ -17,18 +18,20 @@ const Login = () => {
   const [role, setRole] = useState(''); // the role the visitor signs in as; the server checks it against the account
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState(null); // 'success' or 'error'
-  const [demoAccounts, setDemoAccounts] = useState([]);
   const [busyUsername, setBusyUsername] = useState(null);
   const location = useLocation();
   const { login, isAuthenticated, sessionExpired } = useAuth();
   const destination = location.state?.from?.pathname || '/dashboard';
 
   // The backend lists demo accounts only while it runs with DEMO_LOGIN_ENABLED=true; otherwise this stays empty.
+  const demoAccounts = useDemoAccounts().data ?? [];
+
+  // "Try a demo account" links here with #demo-accounts: scroll to the panel once it has loaded.
   useEffect(() => {
-    getDemoAccounts()
-      .then((res) => setDemoAccounts(Array.isArray(res.data) ? res.data : []))
-      .catch(() => setDemoAccounts([]));
-  }, []);
+    if (location.hash === '#demo-accounts' && demoAccounts.length > 0) {
+      document.getElementById('demo-accounts')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.hash, demoAccounts.length]);
 
   const signIn = async (credentials) => {
     const response = await loginUser(credentials);

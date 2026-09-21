@@ -45,7 +45,11 @@ class DemoAccountSeederTest {
     }
 
     private DemoAccountSeeder seeder(boolean enabled) {
-        return new DemoAccountSeeder(enabled, userRepository, passwordEncoder);
+        return seeder(enabled, true);
+    }
+
+    private DemoAccountSeeder seeder(boolean enabled, boolean includeStaff) {
+        return new DemoAccountSeeder(enabled, includeStaff, userRepository, passwordEncoder);
     }
 
     @Test
@@ -88,6 +92,28 @@ class DemoAccountSeederTest {
         assertThat(reset.getRole()).isEqualTo(UserRole.FARMER);
         assertThat(reset.isSuspended()).isFalse();
         assertThat(passwordEncoder.matches("Farmer@123", reset.getPassword())).isTrue();
+    }
+
+    @Test
+    void withoutStaffOnlyTheNonPrivilegedAccountsAreCreated() {
+        seeder(true, false).run(null);
+
+        assertThat(stored).doesNotContainKeys("admin_demo", "manager_demo");
+        assertThat(stored).hasSize(DemoAccounts.ALL.size() - 2);
+        assertThat(stored.values()).noneMatch(user -> user.getRole().isPrivileged());
+        assertThat(DemoAccounts.visible(false)).noneMatch(account -> account.role().isPrivileged());
+        assertThat(DemoAccounts.visible(true)).hasSameSizeAs(DemoAccounts.ALL);
+    }
+
+    @Test
+    void withoutStaffLeftOverStaffAccountsFromAnEarlierRunAreDeleted() {
+        seeder(true, true).run(null);
+        assertThat(stored).containsKeys("admin_demo", "manager_demo");
+
+        seeder(true, false).run(null);
+
+        verify(userRepository).delete(stored.get("admin_demo"));
+        verify(userRepository).delete(stored.get("manager_demo"));
     }
 
     @Test

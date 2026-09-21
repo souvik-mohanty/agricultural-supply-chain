@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import './Landing.css';
 import img1 from '../../assets/img1.png';
 import Navbar from '../../components/Navbar/Navbar';
-import { useProducts } from '../../hooks/useApiData';
+import { useDemoAccounts, useProducts } from '../../hooks/useApiData';
 import { uniqueCategories } from '../../lib/products';
 import { productImageUrl } from '../../service/productApi';
 import { formatCurrency } from '../../lib/format';
@@ -11,6 +11,7 @@ import { formatCurrency } from '../../lib/format';
 // Public home page. Everything it promises exists in the platform: products, quotes, payments and advice.
 const Landing = () => {
   const products = useProducts();
+  const hasDemoAccounts = (useDemoAccounts().data ?? []).length > 0;
   const list = products.data ?? [];
   const categories = uniqueCategories(list);
   const featured = [...list].filter((p) => p.quantityAvailable > 0).slice(0, 4);
@@ -33,7 +34,13 @@ const Landing = () => {
             <Link to="/products" className="cta-button">
               Browse products
             </Link>
+            {hasDemoAccounts && (
+              <Link to="/login#demo-accounts" className="cta-button">
+                Try a demo account
+              </Link>
+            )}
           </div>
+          {hasDemoAccounts && <p className="hero-demo-note">No sign-up needed: sign in with a ready-made demo account.</p>}
         </div>
 
         <div className="hero-image">

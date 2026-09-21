@@ -79,7 +79,8 @@ environment variables below.
 | `ADMIN_EMAIL` | first deploy | `you@example.com` | |
 | `RAZORPAY_KEY` | for payments | `rzp_test_xxxxxxxxxxxxxx` | Dashboard → Account & Settings → API keys (Test mode). Live keys need Razorpay KYC. |
 | `RAZORPAY_SECRET` | for payments | *the matching key secret* | Without the pair, the app runs and payment endpoints answer 503. |
-| `DEMO_LOGIN_ENABLED` | no | `false` | Keep `false` for real use. `true` creates dummy accounts (including an admin) whose passwords are shown on the login page, and adds passwordless login endpoints. Only for a throw-away demo site. |
+| `DEMO_LOGIN_ENABLED` | no | `false` | `true` creates dummy accounts whose passwords are shown on the login page, so visitors can try the site without registering. `render.yaml` sets it to `true` for the public showcase; set it to `false` once real users' data is on the site. |
+| `DEMO_INCLUDE_STAFF` | no | `true` | Only matters with demo mode on. `false` leaves out the ADMIN and MANAGER demo accounts and deletes them if they exist. Keep it `false` on any public site (`render.yaml` does). |
 | `MAIL_USERNAME` | optional | `yourname@gmail.com` | See the email warning below. |
 | `MAIL_PASSWORD` | optional | a 16-character Gmail **app password** | Google account → Security → 2-Step Verification → App passwords. Not your normal password. |
 | `MAIL_HOST` / `MAIL_PORT` | optional | `smtp.gmail.com` / `587` | These are the defaults; only set them for another provider. |
@@ -179,7 +180,7 @@ unless you add them to `CORS_ALLOWED_ORIGINS` as well. Custom domains work the s
 
 ## 8. Security checklist
 
-- [ ] `DEMO_LOGIN_ENABLED` is `false` (or unset) in production.
+- [ ] Demo mode: either `DEMO_LOGIN_ENABLED` is `false`, or it is `true` with `DEMO_INCLUDE_STAFF=false` and the site holds no real users' data. Demo accounts are ordinary farmer/buyer/advisor/... accounts with public passwords, so anyone can act as them (an advisor can publish articles, a buyer can place orders). Never run a public site with `DEMO_INCLUDE_STAFF=true`: that publishes an admin password.
 - [ ] `JWT_SECRET` is a fresh random value (not the dev default, not the old committed one).
 - [ ] Razorpay and database credentials are new, not the ones from the old repository history.
 - [ ] `CORS_ALLOWED_ORIGINS` lists only your real frontend origins (no `*`, no localhost in production).

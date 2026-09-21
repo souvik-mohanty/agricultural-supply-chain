@@ -34,6 +34,11 @@ public final class DemoAccounts {
             new Account("carrier_demo", "Carrier@123", UserRole.CARRIER,
                     "No shipment tools yet: only browsing and the profile", "+91 90000 00010", "Transport depot, Pune"));
 
+    /** The accounts to offer; the ADMIN and MANAGER ones only when `includeStaff` is true. */
+    public static List<Account> visible(boolean includeStaff) {
+        return ALL.stream().filter(account -> includeStaff || !account.role().isPrivileged()).toList();
+    }
+
     private DemoAccounts() {
     }
 }

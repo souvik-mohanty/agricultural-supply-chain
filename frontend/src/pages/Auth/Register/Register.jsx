@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../../../components/Logo/Logo';
 import './Register.css';
-import { registerUser } from '../../../service/authApi'; 
+import { registerUser } from '../../../service/authApi';
+import { useDemoAccounts } from '../../../hooks/useApiData';
 
 const Register = () => {
+  const hasDemoAccounts = (useDemoAccounts().data ?? []).length > 0;
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -46,6 +48,11 @@ const Register = () => {
       <Link to="/" className="auth-logo" aria-label="AgroLink home"><Logo layout="stacked" tone="dark" /></Link>
       <div className="register-form">
         <h1>Sign Up</h1>
+        {hasDemoAccounts && (
+          <p className="register-demo-note">
+            Just looking around? <Link to="/login#demo-accounts">Use a demo account</Link> instead, no sign-up needed.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="form-grid">
 

@@ -119,6 +119,64 @@ class DemoAccountsHttpTest {
         }
     }
 
+    /** How the deployed showcase runs: demo mode on, but no ADMIN/MANAGER account with a public password. */
+    @Nested
+    @SpringBootTest(properties = {"spring.data.mongodb.auto-index-creation=false", "app.demo-login.enabled=true",
+            "app.demo-login.include-staff=false"})
+    @AutoConfigureMockMvc
+    class PublicShowcaseWithoutStaff {
+
+        @Autowired MockMvc mvc;
+        @Autowired DemoAccountSeeder seeder;
+        @MockitoBean UserRepository userRepository;
+        final Map<String, User> users = new HashMap<>();
+
+        @BeforeEach
+        void inMemoryUsersThenSeed() {
+            when(userRepository.findByUsername(anyString()))
+                    .thenAnswer(inv -> Optional.ofNullable(users.get(inv.<String>getArgument(0))));
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User user = inv.getArgument(0);
+                if (user.getId() == null) user.setId("id-" + user.getUsername());
+                users.put(user.getUsername(), user);
+                return user;
+            });
+            seeder.run(null);
+        }
+
+        private int loginStatus(String username, String password) throws Exception {
+            return mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, password)))
+                    .andReturn().getResponse().getStatus();
+        }
+
+        @Test
+        void onlyTheEightNonStaffAccountsAreListed() throws Exception {
+            mvc.perform(get("/api/auth/demo-accounts"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(DemoAccounts.ALL.size() - 2))
+                    .andExpect(jsonPath("$[?(@.role == 'ADMIN')]").isEmpty())
+                    .andExpect(jsonPath("$[?(@.role == 'MANAGER')]").isEmpty());
+        }
+
+        @Test
+        void theListedAccountsSignInButTheStaffOnesDoNot() throws Exception {
+            for (DemoAccounts.Account account : DemoAccounts.visible(false)) {
+                assertThat(loginStatus(account.username(), account.password())).as(account.username()).isEqualTo(200);
+            }
+            assertThat(loginStatus("admin_demo", "Admin@123")).isEqualTo(401);
+            assertThat(loginStatus("manager_demo", "Manager@123")).isEqualTo(401);
+        }
+
+        @Test
+        void thePasswordlessDemoLoginNoLongerExists() throws Exception {
+            for (String role : new String[]{"ADMIN", "FARMER"}) {
+                int status = mvc.perform(post("/api/auth/demo-login/" + role)).andReturn().getResponse().getStatus();
+                assertThat(status).as(role).isIn(401, 403, 404, 405);
+            }
+        }
+    }
+
     @Nested
     @SpringBootTest(properties = "spring.data.mongodb.auto-index-creation=false")
     @AutoConfigureMockMvc

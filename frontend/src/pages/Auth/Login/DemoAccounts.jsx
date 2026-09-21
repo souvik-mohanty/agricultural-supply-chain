@@ -5,10 +5,12 @@ import { roleLabel } from '../../../auth/roles';
 //   "Use"      copies the credentials into the sign-in form, so a visitor sees the normal login flow
 //   "Sign in"  logs in straight away with the same credentials (the normal login, not a shortcut)
 const DemoAccounts = ({ accounts, busyUsername, onUse, onSignIn }) => (
-  <section className="demo-accounts" aria-labelledby="demo-accounts-title">
+  <section id="demo-accounts" className="demo-accounts" aria-labelledby="demo-accounts-title">
     <h2 id="demo-accounts-title">Demo accounts</h2>
     <p className="demo-accounts-note">
-      Try AgroLink with a ready-made account. These are dummy users with public passwords, reset every time the server starts.
+      No need to register: pick a ready-made account and look around. These are shared dummy users with public
+      passwords, so anyone can be signed in as them at the same time, and they are reset whenever the server restarts.
+      Don't enter anything private.
     </p>
 
     <ul className="demo-accounts-list">

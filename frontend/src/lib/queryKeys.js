@@ -17,4 +17,5 @@ export const keys = {
   articles: ['advisory', 'articles'],
   myQueries: ['queries', 'mine'],
   allQueries: ['queries', 'all'],
+  demoAccounts: ['auth', 'demo-accounts'],
 };

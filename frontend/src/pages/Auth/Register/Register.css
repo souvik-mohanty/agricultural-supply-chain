@@ -129,3 +129,9 @@ body {
 .form-row input {
   width: 100%;
 }
+
+.register-demo-note {
+  margin: 0 0 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}

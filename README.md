@@ -70,7 +70,8 @@ anything that lived only there (database URI, mail credentials, ...) must now be
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` | Creates this ADMIN account on startup if it does not exist. Public sign-up cannot create admins, so this is how you get the first one. | unset |
 | `RAZORPAY_KEY`, `RAZORPAY_SECRET` | Payments. Without them the app runs and payment endpoints answer 503. | unset |
 | `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_HOST`, `MAIL_PORT` | SMTP for email notifications (Gmail needs an app password) | Gmail host, no credentials |
-| `DEMO_LOGIN_ENABLED` | Demo mode: creates 10 dummy accounts with **publicly listed passwords** (including an ADMIN) and shows them on the login page. Use it on your machine only. See "Demo accounts" below. The VS Code "Backend: run" task turns it on. | `false` |
+| `DEMO_LOGIN_ENABLED` | Demo mode: creates dummy accounts with **publicly listed passwords** and shows them on the login page (and a "Try a demo account" button on the home page), so visitors need not register. See "Demo accounts" below. The VS Code "Backend: run" task turns it on; `render.yaml` turns it on for the deployed showcase. | `false` |
+| `DEMO_INCLUDE_STAFF` | With demo mode on, `false` leaves out the ADMIN and MANAGER demo accounts (and deletes them if they exist). Used for the public site. | `true` |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated origins allowed to call the API from a browser | `http://localhost:5173` |
 
 **Maintenance mode:** run with `SPRING_PROFILES_ACTIVE=maintenance` to answer 503 to everything except
@@ -79,8 +80,9 @@ anything that lived only there (database URI, mail credentials, ...) must now be
 ### Demo accounts
 
 With `DEMO_LOGIN_ENABLED=true` the backend creates these users at startup (and resets their password, role and
-suspension every time it starts) and the login page lists them: **Use** copies the credentials into the form,
-**Sign in** logs in straight away. Sign-in itself is the normal one: the passwords are real, just public.
+suspension every time it starts) and the login page lists them, so a visitor can look around **without registering**:
+**Use** copies the credentials into the form, **Sign in** logs in straight away. The home and sign-up pages link to
+the list too. Sign-in itself is the normal one: the passwords are real, just public.
 
 | Role | Username | Password |
 |---|---|---|
@@ -95,7 +97,10 @@ suspension every time it starts) and the login page lists them: **Use** copies t
 
 The sign-in form has a **Sign in as** role picker. The server checks it: right password but a different role is
 refused ("This account is registered as Farmer, not Buyer"), and a wrong password never reveals the role.
-**Never enable demo mode on a deployment with real users:** it publishes an admin password.
+On the deployed site (`render.yaml`) demo mode is on with `DEMO_INCLUDE_STAFF=false`, so only the eight
+non-staff accounts exist there and there is no public admin login. Because the passwords are public, anyone can act as
+these accounts (for example an advisor can publish articles): turn demo mode off once the site has real users' data.
+With `DEMO_INCLUDE_STAFF=true` (the local default) the admin password is public, so never do that on a public site.
 
 ### Deploying
 
@@ -129,7 +134,7 @@ Errors are always JSON: `{ timestamp, status, error, message, path }`.
 | Area | Endpoints | Who |
 |---|---|---|
 | Auth | `POST /auth/register`, `POST /auth/login` `{username,password,role?}` | public (registration cannot choose ADMIN or MANAGER). If `role` is sent, sign-in only works when the account has that role |
-| | `GET /auth/demo-accounts` (dummy accounts and passwords), `GET /auth/demo-login`, `POST /auth/demo-login/{role}` (passwordless) | public, but a no-op (empty list / 404) unless `DEMO_LOGIN_ENABLED=true` |
+| | `GET /auth/demo-accounts` (dummy accounts and passwords) | public, but an empty list unless `DEMO_LOGIN_ENABLED=true` |
 | | `POST /auth/registers` (bulk create) | ADMIN |
 | Users | `GET /users/me`; `GET / PUT / DELETE /users/{id}` | the user themself, or ADMIN. Only ADMIN can change roles |
 | Products | `GET /products[?category=]`, `GET /products/{id}`, `GET /products/photo/{id}` | public |

@@ -7,6 +7,7 @@ import { getCart } from '../service/cartApi';
 import { getInbox } from '../service/notificationApi';
 import { getComplaints, getUsers } from '../service/adminApi';
 import { getReadyForDelivery } from '../service/warehouseApi';
+import { getDemoAccounts } from '../service/authApi';
 import { getAllQueries, getArticles, getMyQueries } from '../service/advisoryApi';
 
 // Thin wrappers so pages share cache keys and the "unwrap axios .data" step.
@@ -26,6 +27,18 @@ export const useOrder = (id) => useQuery({ queryKey: keys.order(id), queryFn: da
 
 export const useSellerOrders = (enabled = true) =>
   useQuery({ queryKey: keys.sellerOrders, queryFn: data(getSellerOrders), enabled });
+
+// The dummy accounts the backend lists in demo mode. An empty list (or a failed request) means "no demo mode".
+export const useDemoAccounts = () =>
+  useQuery({
+    queryKey: keys.demoAccounts,
+    queryFn: async () => {
+      const list = (await getDemoAccounts()).data;
+      return Array.isArray(list) ? list : [];
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
 
 export const useRfqs = () => useQuery({ queryKey: keys.rfqs, queryFn: data(listRfqs) });
 

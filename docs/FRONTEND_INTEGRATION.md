@@ -30,7 +30,7 @@ Errors are always `{ timestamp, status, error, message, path }`.
 | Page / route | State | Notes |
 |---|---|---|
 | `/` Landing | Existing, **makes unsupported claims** | "AI-powered soil analysis", "real-time weather", "smart recommendations" have no backend at all |
-| `/login` | Working | Real API; now also has demo-role buttons when the backend enables them |
+| `/login` | Working | Real API; also lists the demo accounts (and a role picker) when the backend runs in demo mode |
 | `/register` | Working | Fixed this session (was broken); staff roles hidden |
 | `/update-profile` | Working, **not route-protected** | Real API |
 | `/profile` | Working | Real API |

@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +23,7 @@ import java.util.List;
 public class AuthController {
 
     private final AuthService authService;
-    private final DemoLoginService demoLoginService;
+    private final DemoAccountService demoAccountService;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
@@ -51,19 +50,7 @@ public class AuthController {
     /** Dummy accounts and their passwords for the login page. Empty unless DEMO_LOGIN_ENABLED=true. */
     @GetMapping("/demo-accounts")
     public List<DemoAccountResponse> demoAccounts() {
-        return demoLoginService.accounts();
-    }
-
-    /** Roles offered by the passwordless demo login. Empty unless DEMO_LOGIN_ENABLED=true. */
-    @GetMapping("/demo-login")
-    public List<String> demoRoles() {
-        return demoLoginService.availableRoles();
-    }
-
-    /** Passwordless login for demos. Answers 404 unless DEMO_LOGIN_ENABLED=true. */
-    @PostMapping("/demo-login/{role}")
-    public ResponseEntity<JwtResponse> demoLogin(@PathVariable String role) {
-        return ResponseEntity.ok(demoLoginService.login(role));
+        return demoAccountService.accounts();
     }
 
     @PostMapping("/login")
