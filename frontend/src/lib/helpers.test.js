@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { getErrorMessage, isUnauthorized, shouldRetry } from './errors.js';
 import { formatCurrency, formatDate, humanize } from './format.js';
 import { navItemsFor } from '../navigation/navItems.js';
-import { ROLES, isBuyerRole, roleLabel } from '../auth/roles.js';
+import { ROLES, ROLE_CHOICES, isBuyerRole, roleLabel } from '../auth/roles.js';
 
 const httpError = (status, message) => ({ response: { status, data: message ? { message } : {} } });
 
@@ -74,6 +74,11 @@ test('navigation: every link points at a route path (no duplicates within a role
     assert.ok(paths.every((path) => path.startsWith('/')));
     assert.equal(new Set(paths).size, paths.length, `duplicate link for ${role}`);
   }
+});
+
+test('roles: the sign-in picker offers every backend role exactly once', () => {
+  assert.deepEqual([...ROLE_CHOICES].sort(), Object.values(ROLES).sort());
+  assert.equal(new Set(ROLE_CHOICES).size, ROLE_CHOICES.length);
 });
 
 test('roles: buyer detection and labels', () => {

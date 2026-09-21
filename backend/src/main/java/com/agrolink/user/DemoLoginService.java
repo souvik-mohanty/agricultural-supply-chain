@@ -2,6 +2,7 @@ package com.agrolink.user;
 
 import com.agrolink.common.exception.ResourceNotFoundException;
 import com.agrolink.security.JwtUtil;
+import com.agrolink.user.dto.DemoAccountResponse;
 import com.agrolink.user.dto.JwtResponse;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,11 @@ public class DemoLoginService {
     /** The roles that can be entered without a password; empty when demo login is off. */
     public List<String> availableRoles() {
         return enabled ? Arrays.stream(UserRole.values()).map(Enum::name).toList() : List.of();
+    }
+
+    /** The dummy accounts (with passwords) for the login page; empty when demo mode is off. */
+    public List<DemoAccountResponse> accounts() {
+        return enabled ? DemoAccounts.ALL.stream().map(DemoAccountResponse::from).toList() : List.of();
     }
 
     public JwtResponse login(String roleName) {

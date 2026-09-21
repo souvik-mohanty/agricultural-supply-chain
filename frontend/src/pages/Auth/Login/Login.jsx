@@ -1,57 +1,76 @@
 import React, { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
-import { loginUser, getDemoRoles, demoLogin } from "../../../service/authApi";
+import { loginUser, getDemoAccounts } from "../../../service/authApi";
 import { useAuth } from "../../../auth/useAuth";
-import { roleLabel } from "../../../auth/roles";
+import { ROLE_CHOICES, roleLabel } from "../../../auth/roles";
 import Logo from '../../../components/Logo/Logo';
+import DemoAccounts from './DemoAccounts';
 import './Login.css';
+
+const errorText = (err) =>
+  err.response?.data?.message ||
+  (typeof err.response?.data === 'string' ? err.response.data : "❌ Login failed");
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState(''); // the role the visitor signs in as; the server checks it against the account
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState(null); // 'success' or 'error'
-  const [demoRoles, setDemoRoles] = useState([]);
+  const [demoAccounts, setDemoAccounts] = useState([]);
+  const [busyUsername, setBusyUsername] = useState(null);
   const location = useLocation();
   const { login, isAuthenticated, sessionExpired } = useAuth();
   const destination = location.state?.from?.pathname || '/dashboard';
 
-  // The backend offers demo roles only when it runs with DEMO_LOGIN_ENABLED=true.
+  // The backend lists demo accounts only while it runs with DEMO_LOGIN_ENABLED=true; otherwise this stays empty.
   useEffect(() => {
-    getDemoRoles()
-      .then((res) => setDemoRoles(res.data))
-      .catch(() => setDemoRoles([]));
+    getDemoAccounts()
+      .then((res) => setDemoAccounts(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setDemoAccounts([]));
   }, []);
 
-  const handleDemoLogin = async (role) => {
-    try {
-      const response = await demoLogin(role);
+  const signIn = async (credentials) => {
+    const response = await loginUser(credentials);
+    if (response.status === 200 && response.data.token) {
       await login(response.data.token); // once logged in, the redirect below takes over
-    } catch (err) {
-      setMsg(err.response?.data?.message || "Demo login failed");
-      setMsgType("error");
+    } else {
+      throw new Error("Login failed: Token not received");
     }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await loginUser({ username, password });
-
-      if (response.status === 200 && response.data.token) {
-        await login(response.data.token); // once logged in, the redirect below takes over
-      } else {
-        console.log("Login failed.");
-        setMsg("Login failed: Token not received");
-        setMsgType("error");
-      }
+      await signIn({ username, password, role });
     } catch (err) {
-      const errorMsg =
-        err.response?.data?.message ||
-        (typeof err.response?.data === 'string' ? err.response.data : "❌ Login failed");
-
-      setMsg(errorMsg);
+      setMsg(errorText(err));
       setMsgType("error");
+    }
+  };
+
+  // "Use": show the credentials in the form, as if the visitor had typed them.
+  const useAccount = (account) => {
+    setUsername(account.username);
+    setPassword(account.password);
+    setRole(account.role);
+    setMsg(`Filled in ${account.username}. Press Sign In.`);
+    setMsgType("success");
+    document.getElementById('login-username')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // "Sign in": the same login request, without the typing.
+  const signInAs = async (account) => {
+    setBusyUsername(account.username);
+    setMsg('');
+    try {
+      await signIn({ username: account.username, password: account.password, role: account.role });
+    } catch (err) {
+      setMsg(errorText(err));
+      setMsgType("error");
+      document.getElementById('login-username')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } finally {
+      setBusyUsername(null);
     }
   };
 
@@ -65,13 +84,31 @@ const Login = () => {
       <div className="login-form">
         <h1>Sign In</h1>
         <form onSubmit={handleLogin}>
+          <select
+            id="login-role"
+            aria-label="Sign in as"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            required
+          >
+            <option value="" disabled>Sign in as…</option>
+            {ROLE_CHOICES.map((choice) => (
+              <option key={choice} value={choice}>{roleLabel(choice)}</option>
+            ))}
+          </select>
           <input type="text"
+            id="login-username"
+            aria-label="User name"
+            autoComplete="username"
             placeholder="User Name"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
           />
           <input type="password"
+            id="login-password"
+            aria-label="Password"
+            autoComplete="current-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -96,20 +133,11 @@ const Login = () => {
             </p>
           )}
         </form>
-
-        {demoRoles.length > 0 && (
-          <div className="demo-login">
-            <p className="demo-login-title">Quick login (demo, no password)</p>
-            <div className="demo-login-buttons">
-              {demoRoles.map((role) => (
-                <button type="button" key={role} onClick={() => handleDemoLogin(role)}>
-                  Login as {roleLabel(role)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {demoAccounts.length > 0 && (
+        <DemoAccounts accounts={demoAccounts} busyUsername={busyUsername} onUse={useAccount} onSignIn={signInAs} />
+      )}
     </div>
   );
 };

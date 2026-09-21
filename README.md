@@ -70,11 +70,32 @@ anything that lived only there (database URI, mail credentials, ...) must now be
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` | Creates this ADMIN account on startup if it does not exist. Public sign-up cannot create admins, so this is how you get the first one. | unset |
 | `RAZORPAY_KEY`, `RAZORPAY_SECRET` | Payments. Without them the app runs and payment endpoints answer 503. | unset |
 | `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_HOST`, `MAIL_PORT` | SMTP for email notifications (Gmail needs an app password) | Gmail host, no credentials |
-| `DEMO_LOGIN_ENABLED` | `true` shows "Login as Admin / Farmer / ..." buttons on the login page that sign in **without a password** (accounts `demo-<role>`). Anyone can become any role, ADMIN included, so use it on your machine only. The VS Code "Backend: run" task turns it on. | `false` |
+| `DEMO_LOGIN_ENABLED` | Demo mode: creates 10 dummy accounts with **publicly listed passwords** (including an ADMIN) and shows them on the login page. Use it on your machine only. See "Demo accounts" below. The VS Code "Backend: run" task turns it on. | `false` |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated origins allowed to call the API from a browser | `http://localhost:5173` |
 
 **Maintenance mode:** run with `SPRING_PROFILES_ACTIVE=maintenance` to answer 503 to everything except
 `/actuator/health`, or set `app.maintenance.blocked-paths` / `app.maintenance.blocked-origin` to block only part of the traffic.
+
+### Demo accounts
+
+With `DEMO_LOGIN_ENABLED=true` the backend creates these users at startup (and resets their password, role and
+suspension every time it starts) and the login page lists them: **Use** copies the credentials into the form,
+**Sign in** logs in straight away. Sign-in itself is the normal one: the passwords are real, just public.
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin_demo` | `Admin@123` |
+| Manager | `manager_demo` | `Manager@123` |
+| Farmer | `farmer_ravi`, `farmer_meena` | `Farmer@123` |
+| Buyer | `buyer_asha`, `buyer_kiran` | `Buyer@123` |
+| Customer | `customer_demo` | `Customer@123` |
+| Warehouse operator | `warehouse_demo` | `Warehouse@123` |
+| Advisor | `advisor_demo` | `Advisor@123` |
+| Carrier | `carrier_demo` | `Carrier@123` |
+
+The sign-in form has a **Sign in as** role picker. The server checks it: right password but a different role is
+refused ("This account is registered as Farmer, not Buyer"), and a wrong password never reveals the role.
+**Never enable demo mode on a deployment with real users:** it publishes an admin password.
 
 ### Deploying
 
@@ -107,8 +128,8 @@ Errors are always JSON: `{ timestamp, status, error, message, path }`.
 
 | Area | Endpoints | Who |
 |---|---|---|
-| Auth | `POST /auth/register`, `POST /auth/login` | public (registration cannot choose ADMIN or MANAGER) |
-| | `GET /auth/demo-login`, `POST /auth/demo-login/{role}` | public, but a no-op (empty list / 404) unless `DEMO_LOGIN_ENABLED=true` |
+| Auth | `POST /auth/register`, `POST /auth/login` `{username,password,role?}` | public (registration cannot choose ADMIN or MANAGER). If `role` is sent, sign-in only works when the account has that role |
+| | `GET /auth/demo-accounts` (dummy accounts and passwords), `GET /auth/demo-login`, `POST /auth/demo-login/{role}` (passwordless) | public, but a no-op (empty list / 404) unless `DEMO_LOGIN_ENABLED=true` |
 | | `POST /auth/registers` (bulk create) | ADMIN |
 | Users | `GET /users/me`; `GET / PUT / DELETE /users/{id}` | the user themself, or ADMIN. Only ADMIN can change roles |
 | Products | `GET /products[?category=]`, `GET /products/{id}`, `GET /products/photo/{id}` | public |

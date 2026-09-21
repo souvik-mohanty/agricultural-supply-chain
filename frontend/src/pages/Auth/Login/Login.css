@@ -8,7 +8,9 @@ body {
 
 
 .login {
-  height: 100vh;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -44,7 +46,8 @@ body {
   flex-direction: column;
 }
 
-.login-form input {
+.login-form input,
+.login-form select {
   padding: 16px;
   margin-bottom: 14px;
   background: #333;
@@ -93,38 +96,140 @@ body {
 
 }
 
-.login-form .demo-login {
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px solid #333;
+/* ===== Demo accounts (shown only while the backend runs in demo mode) ===== */
+.demo-accounts {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
-.login-form .demo-login-title {
+.demo-accounts h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.3rem;
+}
+
+.demo-accounts-note {
+  margin: 0 0 1.2rem;
   color: #b3b3b3;
-  font-size: 13px;
-  margin: 0 0 12px;
-  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
-.login-form .demo-login-buttons {
+.demo-accounts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.9rem;
+}
+
+.demo-account {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  background: #1c1c1c;
+  border: 1px solid #333;
+  border-radius: 6px;
 }
 
-.login-form .demo-login-buttons button {
-  flex: 1 1 45%;
-  margin-top: 0;
-  padding: 10px 8px;
-  font-size: 13px;
-  background-color: transparent;
-  color: #5ef630;
+.demo-account-role {
+  align-self: flex-start;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(94, 246, 48, 0.14);
+  color: #7dff5a;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.demo-account-desc {
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  min-height: 2.4em;
+}
+
+.demo-account-creds {
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.demo-account-creds div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.demo-account-creds dt {
+  color: #9a9a9a;
+  font-size: 0.78rem;
+}
+
+.demo-account-creds dd {
+  margin: 0;
+}
+
+.demo-account-creds code {
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #ffffff;
+  word-break: break-all;
+}
+
+.demo-account-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.3rem;
+}
+
+.demo-account-actions button {
+  flex: 1;
+  padding: 0.5rem 0.6rem;
   border: 1px solid #5ef630;
+  border-radius: 4px;
+  background: #5ef630;
+  color: #101010;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.login-form .demo-login-buttons button:hover {
-  background-color: #5ef630;
-  color: #141414;
+.demo-account-actions button.secondary {
+  background: transparent;
+  color: #5ef630;
+}
+
+.demo-account-actions button:hover:not(:disabled) {
+  background: #12f69f;
+  border-color: #12f69f;
+  color: #101010;
+}
+
+.demo-account-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.demo-accounts button:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.login-form form > p {
+  margin-top: 0.9rem;
+  line-height: 1.4;
 }
 
 .login-options a.forgot:hover {

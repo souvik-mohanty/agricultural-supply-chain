@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -49,13 +50,32 @@ public class AuthService {
     }
 
     public JwtResponse login(LoginRequest request) {
+        // a malformed role is a bad request whatever the password is
+        UserRole requestedRole = StringUtils.hasText(request.role()) ? UserService.parseRole(request.role()) : null;
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password()));
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+
+        // Checked only after the password was verified, so a wrong password never reveals which role an account has.
+        if (requestedRole != null && principal.getRole() != requestedRole) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "This account is registered as " + label(principal.getRole()) + ", not " + label(requestedRole)
+                            + ". Choose the matching role to sign in.");
+        }
         String role = principal.getRole() != null ? principal.getRole().name() : null;
         String token = jwtUtil.generateToken(principal.getUsername(), role);
 
         return new JwtResponse(token, role, jwtUtil.getExpiration(token).toInstant().toString());
+    }
+
+    /** WAREHOUSE_OPERATOR -> "Warehouse operator" */
+    private static String label(UserRole role) {
+        if (role == null) {
+            return "no role";
+        }
+        String name = role.name().replace('_', ' ').toLowerCase();
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
 }

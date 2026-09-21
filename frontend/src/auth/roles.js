@@ -21,6 +21,18 @@ export const ADVISORY_STAFF_ROLES = [ROLES.ADVISOR, ROLES.ADMIN];
 
 export const isBuyerRole = (role) => BUYER_ROLES.includes(role);
 
+// The roles a visitor can choose when signing in, most common first.
+export const ROLE_CHOICES = [
+  ROLES.FARMER,
+  ROLES.BUYER,
+  ROLES.CUSTOMER,
+  ROLES.WAREHOUSE_OPERATOR,
+  ROLES.ADVISOR,
+  ROLES.CARRIER,
+  ROLES.MANAGER,
+  ROLES.ADMIN,
+];
+
 const LABELS = {
   ADMIN: 'Admin',
   MANAGER: 'Manager',

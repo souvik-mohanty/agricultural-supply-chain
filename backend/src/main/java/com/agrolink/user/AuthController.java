@@ -1,5 +1,6 @@
 package com.agrolink.user;
 
+import com.agrolink.user.dto.DemoAccountResponse;
 import com.agrolink.user.dto.JwtResponse;
 import com.agrolink.user.dto.LoginRequest;
 import com.agrolink.user.dto.RegisterRequest;
@@ -45,6 +46,12 @@ public class AuthController {
             }
         }
         return ResponseEntity.ok(results);
+    }
+
+    /** Dummy accounts and their passwords for the login page. Empty unless DEMO_LOGIN_ENABLED=true. */
+    @GetMapping("/demo-accounts")
+    public List<DemoAccountResponse> demoAccounts() {
+        return demoLoginService.accounts();
     }
 
     /** Roles offered by the passwordless demo login. Empty unless DEMO_LOGIN_ENABLED=true. */

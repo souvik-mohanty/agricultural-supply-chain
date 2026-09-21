@@ -79,7 +79,7 @@ environment variables below.
 | `ADMIN_EMAIL` | first deploy | `you@example.com` | |
 | `RAZORPAY_KEY` | for payments | `rzp_test_xxxxxxxxxxxxxx` | Dashboard → Account & Settings → API keys (Test mode). Live keys need Razorpay KYC. |
 | `RAZORPAY_SECRET` | for payments | *the matching key secret* | Without the pair, the app runs and payment endpoints answer 503. |
-| `DEMO_LOGIN_ENABLED` | no | `false` | Keep `false`. `true` adds passwordless "Login as Admin" buttons that anyone can use. |
+| `DEMO_LOGIN_ENABLED` | no | `false` | Keep `false` for real use. `true` creates dummy accounts (including an admin) whose passwords are shown on the login page, and adds passwordless login endpoints. Only for a throw-away demo site. |
 | `MAIL_USERNAME` | optional | `yourname@gmail.com` | See the email warning below. |
 | `MAIL_PASSWORD` | optional | a 16-character Gmail **app password** | Google account → Security → 2-Step Verification → App passwords. Not your normal password. |
 | `MAIL_HOST` / `MAIL_PORT` | optional | `smtp.gmail.com` / `587` | These are the defaults; only set them for another provider. |

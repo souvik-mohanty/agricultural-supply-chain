@@ -114,6 +114,53 @@ class SecurityIntegrationTest {
                 .andExpect(jsonPath("$.password").doesNotExist());
     }
 
+    private static final String LOGIN_WITH_ROLE_JSON = """
+            {"username":"%s","password":"%s","role":"%s"}""";
+
+    @Test
+    void signingInAsTheAccountsOwnRoleWorks() throws Exception {
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(LOGIN_WITH_ROLE_JSON.formatted("farmer", "secret1", "FARMER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("FARMER"));
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(LOGIN_WITH_ROLE_JSON.formatted("farmer", "secret1", "farmer")))
+                .andExpect(status().isOk()); // the role is case-insensitive
+    }
+
+    @Test
+    void signingInAsTheWrongRoleIsRefusedWithoutAToken() throws Exception {
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(LOGIN_WITH_ROLE_JSON.formatted("farmer", "secret1", "ADMIN")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.token").doesNotExist())
+                .andExpect(jsonPath("$.message").value(
+                        "This account is registered as Farmer, not Admin. Choose the matching role to sign in."));
+    }
+
+    @Test
+    void aWrongPasswordNeverRevealsTheAccountsRole() throws Exception {
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(LOGIN_WITH_ROLE_JSON.formatted("farmer", "wrong", "ADMIN")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Invalid username or password"));
+    }
+
+    @Test
+    void anUnknownRoleIsABadRequest() throws Exception {
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(LOGIN_WITH_ROLE_JSON.formatted("farmer", "secret1", "SUPERHERO")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void theRoleStaysOptionalForOtherApiClients() throws Exception {
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(LOGIN_JSON.formatted("root", "secret1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("ADMIN"));
+    }
+
     @Test
     void wrongPasswordIs401() throws Exception {
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)

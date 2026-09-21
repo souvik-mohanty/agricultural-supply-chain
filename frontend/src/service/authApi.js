@@ -8,11 +8,8 @@ export const registerUser = (userData) => {
   return apiClient.post('/auth/register', userData); // { username, password, email, role, ... }
 };
 
-// Passwordless demo login. The backend returns an empty list unless DEMO_LOGIN_ENABLED=true.
-export const getDemoRoles = () => {
-  return apiClient.get('/auth/demo-login');
-};
-
-export const demoLogin = (role) => {
-  return apiClient.post(`/auth/demo-login/${role}`);
+// Dummy accounts with their passwords, for the login page. The backend returns an empty list unless it runs in
+// demo mode (DEMO_LOGIN_ENABLED=true). Signing in with them uses the normal loginUser call.
+export const getDemoAccounts = () => {
+  return apiClient.get('/auth/demo-accounts');
 };
